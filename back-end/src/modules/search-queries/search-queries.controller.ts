@@ -101,9 +101,12 @@ export async function createSearchQueryController(
     const uporabnik_id = Number(req.body.uporabnik_id);
     const kategorija_id = Number(req.body.kategorija_id);
     const kanal_id = Number(req.body.kanal_id);
+    const zunanji_id_kanala = req.body.zunanji_id_kanala?.trim();
     const pogostost = Number(req.body.pogostost);
     const ura_posiljanja = req.body.ura_posiljanja?.trim();
-    const aktivna = req.body.aktivna === undefined ? true : Boolean(req.body.aktivna);
+    const aktivna = req.body.aktivna === undefined
+        ? true
+        : req.body.aktivna === true || req.body.aktivna === 'true';
     const kraji_ids = Array.isArray(req.body.kraji_ids)
       ? req.body.kraji_ids.map(Number).filter(Boolean)
       : [];
@@ -112,6 +115,7 @@ export async function createSearchQueryController(
       !uporabnik_id ||
       !kategorija_id ||
       !kanal_id ||
+      !zunanji_id_kanala ||
       !pogostost ||
       !ura_posiljanja ||
       kraji_ids.length === 0
@@ -119,17 +123,17 @@ export async function createSearchQueryController(
       res.status(400).json({
         success: false,
         message:
-          'uporabnik_id, kategorija_id, kanal_id, pogostost, ura_posiljanja and kraji_ids are required',
+          'uporabnik_id, kategorija_id, kanal_id, zunanji_id_kanala, pogostost, ura_posiljanja and kraji_ids are required',
       });
       return;
     }
 
     const activeQueriesCount = await countActiveQueriesByUserId(uporabnik_id);
 
-    if (aktivna && activeQueriesCount >= 3) {
+    if (aktivna && activeQueriesCount >= 2) {
       res.status(400).json({
         success: false,
-        message: 'User can have at most 3 active search queries',
+        message: 'User can have at most 2 active search queries',
       });
       return;
     }
@@ -138,6 +142,7 @@ export async function createSearchQueryController(
       uporabnik_id,
       kategorija_id,
       kanal_id,
+      zunanji_id_kanala,
       pogostost,
       ura_posiljanja,
       aktivna,
@@ -164,9 +169,12 @@ export async function updateSearchQueryController(
     const poizvedbaId = Number(req.params.id);
     const kategorija_id = Number(req.body.kategorija_id);
     const kanal_id = Number(req.body.kanal_id);
+    const zunanji_id_kanala = req.body.zunanji_id_kanala?.trim();
     const pogostost = Number(req.body.pogostost);
     const ura_posiljanja = req.body.ura_posiljanja?.trim();
-    const aktivna = Boolean(req.body.aktivna);
+    const aktivna = req.body.aktivna === undefined
+      ? true
+      : req.body.aktivna === true || req.body.aktivna === "true";
     const kraji_ids = Array.isArray(req.body.kraji_ids)
       ? req.body.kraji_ids.map(Number).filter(Boolean)
       : [];
@@ -175,6 +183,7 @@ export async function updateSearchQueryController(
       !poizvedbaId ||
       !kategorija_id ||
       !kanal_id ||
+      !zunanji_id_kanala ||
       !pogostost ||
       !ura_posiljanja ||
       kraji_ids.length === 0
@@ -182,7 +191,7 @@ export async function updateSearchQueryController(
       res.status(400).json({
         success: false,
         message:
-          'id, kategorija_id, kanal_id, pogostost, ura_posiljanja and kraji_ids are required',
+          'id, kategorija_id, kanal_id, zunanji_id_kanala, pogostost, ura_posiljanja and kraji_ids are required',
       });
       return;
     }
@@ -201,10 +210,10 @@ export async function updateSearchQueryController(
       existingQuery.uporabnik_id,
     );
 
-    if (aktivna && !existingQuery.aktivna && activeQueriesCount >= 3) {
+    if (aktivna && !existingQuery.aktivna && activeQueriesCount >= 2) {
       res.status(400).json({
         success: false,
-        message: 'User can have at most 3 active search queries',
+        message: 'User can have at most 2 active search queries',
       });
       return;
     }
@@ -212,6 +221,7 @@ export async function updateSearchQueryController(
     const updated = await updateSearchQuery(poizvedbaId, {
       kategorija_id,
       kanal_id,
+      zunanji_id_kanala,
       pogostost,
       ura_posiljanja,
       aktivna,

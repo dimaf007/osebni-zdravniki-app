@@ -15,4 +15,6 @@ router.post('/', createSearchQueryController);
 router.put('/:id', updateSearchQueryController);
 router.delete('/:id', deleteSearchQueryController);
 
+
+
 export default router;

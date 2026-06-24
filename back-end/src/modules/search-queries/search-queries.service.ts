@@ -7,6 +7,7 @@ export interface SearchQueryRow extends RowDataPacket {
   uporabnik_id: number;
   kategorija_id: number;
   kanal_id: number;
+  zunanji_id_kanala: string;
   pogostost: number;
   ura_posiljanja: string;
   zadnje_posiljanje_datum: string | null;
@@ -20,6 +21,7 @@ export interface SearchQueryDetailsRow extends RowDataPacket {
   kategorija_id: number;
   naziv_kategorije: string;
   kanal_id: number;
+  zunanji_id_kanala: string;
   naziv_kanala: string;
   pogostost: number;
   ura_posiljanja: string;
@@ -55,6 +57,7 @@ export async function getQueriesByUserId(
         ip.kategorija_id,
         kz.naziv_kategorije,
         ip.kanal_id,
+        ip.zunanji_id_kanala,
         k.naziv_kanala,
         ip.pogostost,
         ip.ura_posiljanja,
@@ -81,16 +84,17 @@ export async function getQueryById(
   const [rows] = await pool.query<SearchQueryDetailsRow[]>(
     `
       SELECT
-        ip.poizvedba_id,
-        ip.uporabnik_id,
-        ip.kategorija_id,
-        kz.naziv_kategorije,
-        ip.kanal_id,
-        k.naziv_kanala,
-        ip.pogostost,
-        ip.ura_posiljanja,
-        ip.zadnje_posiljanje_datum,
-        ip.aktivna
+         ip.poizvedba_id,
+         ip.uporabnik_id,
+         ip.kategorija_id,
+         kz.naziv_kategorije,
+         ip.kanal_id,
+         k.naziv_kanala,
+         ip.zunanji_id_kanala,
+         ip.pogostost,
+         ip.ura_posiljanja,
+         ip.zadnje_posiljanje_datum,
+         ip.aktivna
       FROM iskalna_poizvedba ip
       INNER JOIN kategorija_zdravnika kz
         ON kz.kategorija_id = ip.kategorija_id
@@ -125,6 +129,7 @@ export async function createSearchQuery(data: {
   uporabnik_id: number;
   kategorija_id: number;
   kanal_id: number;
+  zunanji_id_kanala: string;
   pogostost: number;
   ura_posiljanja: string;
   aktivna: boolean;
@@ -142,16 +147,18 @@ export async function createSearchQuery(data: {
           uporabnik_id,
           kategorija_id,
           kanal_id,
+          zunanji_id_kanala,
           pogostost,
           ura_posiljanja,
           aktivna
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       [
         data.uporabnik_id,
         data.kategorija_id,
         data.kanal_id,
+        data.zunanji_id_kanala,
         data.pogostost,
         data.ura_posiljanja,
         data.aktivna ? 1 : 0,
@@ -191,6 +198,7 @@ export async function updateSearchQuery(
   data: {
     kategorija_id: number;
     kanal_id: number;
+    zunanji_id_kanala: string;
     pogostost: number;
     ura_posiljanja: string;
     aktivna: boolean;
@@ -208,6 +216,7 @@ export async function updateSearchQuery(
         SET
           kategorija_id = ?,
           kanal_id = ?,
+          zunanji_id_kanala = ?,
           pogostost = ?,
           ura_posiljanja = ?,
           aktivna = ?
@@ -216,6 +225,7 @@ export async function updateSearchQuery(
       [
         data.kategorija_id,
         data.kanal_id,
+        data.zunanji_id_kanala,
         data.pogostost,
         data.ura_posiljanja,
         data.aktivna ? 1 : 0,

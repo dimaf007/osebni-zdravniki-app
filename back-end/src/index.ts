@@ -31,6 +31,20 @@ app.get('/', async (req: Request, res: Response) => {
 });
 
 // Маршрут проверки соединения с БД
+// app.get('/api/health/db', async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const connection = await pool.getConnection();
+//     connection.release();
+
+//     res.json({
+//       success: true,
+//       message: 'Database connection successful',
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
 app.get('/api/health/db', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const connection = await pool.getConnection();
