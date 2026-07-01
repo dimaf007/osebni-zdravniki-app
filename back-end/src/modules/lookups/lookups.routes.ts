@@ -1,13 +1,27 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express'
+import {
+  getCategoriesController,
+  getChannelsController,
+  getCitiesController,
+} from './lookups.controller.js'
 
-const router = Router();
+const router = Router()
 
-// Тестовый endpoint для справочников
-router.get('/health', async (req: Request, res: Response) => {
+// Testni endpoint za preverjanje, ali lookup modul deluje.
+router.get('/health', async (req, res) => {
   res.json({
     success: true,
     message: 'Lookups route is working',
-  });
-});
+  })
+})
 
-export default router;
+// Endpoint vrne vse kategorije zdravnikov.
+router.get('/categories', getCategoriesController)
+
+// Endpoint vrne vse kanale obveščanja.
+router.get('/channels', getChannelsController)
+
+// Endpoint vrne vse kraje.
+router.get('/cities', getCitiesController)
+
+export default router

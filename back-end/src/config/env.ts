@@ -10,5 +10,5 @@ export const env = {
   dbUser: process.env.DB_USER || 'root',
   dbPass: process.env.DB_PASS || '',
   dbName: process.env.DB_DATABASE,
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL || 'http://88.200.63.148:30043',
 };

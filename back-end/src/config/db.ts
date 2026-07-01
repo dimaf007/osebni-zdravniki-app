@@ -12,12 +12,10 @@ const pool = mysql.createPool({
 
 export interface UporabnikRow extends RowDataPacket {
   uporabnik_id: number;
-  zunanji_id: string | null;
   uporabnisko_ime: string;
   user_password: string;
-  ime: string;
-  priimek: string;
   datum_zadnje_posodobitve: string | null;
+  e_posta: string;
 }
 
 export const findUserByUsername = async (
@@ -27,12 +25,10 @@ export const findUserByUsername = async (
     `
     SELECT
       uporabnik_id,
-      zunanji_id,
       uporabnisko_ime,
       user_password,
-      ime,
-      priimek,
-      datum_zadnje_posodobitve
+      datum_zadnje_posodobitve,
+      e_posta
     FROM uporabnik
     WHERE uporabnisko_ime = ?
     `,
@@ -42,25 +38,42 @@ export const findUserByUsername = async (
   return rows;
 };
 
+export const findUserByEmail = async (
+  email: string
+): Promise<UporabnikRow[]> => {
+  const [rows] = await pool.query<UporabnikRow[]>(
+    `
+    SELECT
+      uporabnik_id,
+      uporabnisko_ime,
+      user_password,
+      datum_zadnje_posodobitve,
+      e_posta
+    FROM uporabnik
+    WHERE e_posta = ?
+    `,
+    [email]
+  );
+
+  return rows;
+};
+
 export const createUporabnik = async (
   username: string,
-  password: string,
-  firstName: string,
-  lastName: string
+  email: string,
+  password: string
 ): Promise<ResultSetHeader> => {
   const [result] = await pool.query<ResultSetHeader>(
     `
     INSERT INTO uporabnik (
-      zunanji_id,
       uporabnisko_ime,
       user_password,
-      ime,
-      priimek,
-      datum_zadnje_posodobitve
+      datum_zadnje_posodobitve,
+      e_posta
     )
-    VALUES (?, ?, ?, ?, ?, CURDATE())
+    VALUES (?, ?, CURDATE(), ?)
     `,
-    [null, username, password, firstName, lastName]
+    [username, password, email]
   );
 
   return result;

@@ -56,9 +56,9 @@ export async function getSearchQueryByIdController(
   next: NextFunction,
 ) {
   try {
-    const poizvedbaId = Number(req.params.id);
+    const poizvedba_id = Number(req.params.id);
 
-    if (!poizvedbaId) {
+    if (!poizvedba_id) {
       res.status(400).json({
         success: false,
         message: 'Invalid query id',
@@ -66,7 +66,7 @@ export async function getSearchQueryByIdController(
       return;
     }
 
-    const query = await getQueryById(poizvedbaId);
+    const query = await getQueryById(poizvedba_id);
 
     if (!query) {
       res.status(404).json({
@@ -76,7 +76,7 @@ export async function getSearchQueryByIdController(
       return;
     }
 
-    const kraji_ids = await getQueryCityIds(poizvedbaId);
+    const kraji_ids = await getQueryCityIds(poizvedba_id);
 
     res.status(200).json({
       success: true,
@@ -166,7 +166,7 @@ export async function updateSearchQueryController(
   next: NextFunction,
 ) {
   try {
-    const poizvedbaId = Number(req.params.id);
+    const poizvedba_id = Number(req.params.id);
     const kategorija_id = Number(req.body.kategorija_id);
     const kanal_id = Number(req.body.kanal_id);
     const zunanji_id_kanala = req.body.zunanji_id_kanala?.trim();
@@ -180,7 +180,7 @@ export async function updateSearchQueryController(
       : [];
 
     if (
-      !poizvedbaId ||
+      !poizvedba_id ||
       !kategorija_id ||
       !kanal_id ||
       !zunanji_id_kanala ||
@@ -196,7 +196,7 @@ export async function updateSearchQueryController(
       return;
     }
 
-    const existingQuery = await getQueryById(poizvedbaId);
+    const existingQuery = await getQueryById(poizvedba_id);
 
     if (!existingQuery) {
       res.status(404).json({
@@ -218,7 +218,7 @@ export async function updateSearchQueryController(
       return;
     }
 
-    const updated = await updateSearchQuery(poizvedbaId, {
+    const updated = await updateSearchQuery(poizvedba_id, {
       kategorija_id,
       kanal_id,
       zunanji_id_kanala,
@@ -252,9 +252,9 @@ export async function deleteSearchQueryController(
   next: NextFunction,
 ) {
   try {
-    const poizvedbaId = Number(req.params.id);
+    const poizvedba_id = Number(req.params.id);
 
-    if (!poizvedbaId) {
+    if (!poizvedba_id) {
       res.status(400).json({
         success: false,
         message: 'Invalid query id',
@@ -262,7 +262,7 @@ export async function deleteSearchQueryController(
       return;
     }
 
-    const deleted = await deleteSearchQuery(poizvedbaId);
+    const deleted = await deleteSearchQuery(poizvedba_id);
 
     if (!deleted) {
       res.status(404).json({

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction, Router } from "express";
 import {
   createUporabnik,
+  findUserByEmail,
   findUserByUsername,
 } from "../../config/db.js";
 
@@ -12,27 +13,20 @@ const registerController = async (
   next: NextFunction
 ) => {
   try {
-    let {
-      username,
-      password,
-      firstName,
-      lastName,
-    } = req.body as {
+    let { username, email, password } = req.body as {
       username?: string;
+      email?: string;
       password?: string;
-      firstName?: string;
-      lastName?: string;
     };
 
     username = username?.trim();
+    email = email?.trim().toLowerCase();
     password = password?.trim();
-    firstName = firstName?.trim();
-    lastName = lastName?.trim();
 
-    if (!username || !password || !firstName || !lastName) {
+    if (!username || !email || !password) {
       res.status(400).json({
         success: false,
-        message: "Username, password, firstName and lastName are required.",
+        message: "Username, email and password are required.",
       });
       return;
     }
@@ -47,12 +41,17 @@ const registerController = async (
       return;
     }
 
-    const queryResult = await createUporabnik(
-      username,
-      password,
-      firstName,
-      lastName
-    );
+    const existingEmails = await findUserByEmail(email);
+
+    if (existingEmails.length > 0) {
+      res.status(409).json({
+        success: false,
+        message: "Email is already registered.",
+      });
+      return;
+    }
+
+    const queryResult = await createUporabnik(username, email, password);
 
     if (queryResult.affectedRows === 1) {
       res.status(201).json({
@@ -61,8 +60,7 @@ const registerController = async (
         user: {
           id: queryResult.insertId,
           username,
-          firstName,
-          lastName,
+          email,
         },
       });
       return;
@@ -125,8 +123,7 @@ const loginController = async (
       user: {
         id: user.uporabnik_id,
         username: user.uporabnisko_ime,
-        firstName: user.ime,
-        lastName: user.priimek,
+        email: user.e_posta,
       },
     });
   } catch (error) {

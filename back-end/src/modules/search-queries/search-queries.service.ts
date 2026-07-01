@@ -79,7 +79,7 @@ export async function getQueriesByUserId(
 
 // Получает один поисковый запрос по id
 export async function getQueryById(
-  poizvedbaId: number,
+  poizvedba_id: number,
 ): Promise<SearchQueryDetailsRow | null> {
   const [rows] = await pool.query<SearchQueryDetailsRow[]>(
     `
@@ -103,14 +103,14 @@ export async function getQueryById(
       WHERE ip.poizvedba_id = ?
       LIMIT 1
     `,
-    [poizvedbaId],
+    [poizvedba_id],
   );
 
   return rows[0] ?? null;
 }
 
 // Получает id всех городов, связанных с поисковым запросом
-export async function getQueryCityIds(poizvedbaId: number): Promise<number[]> {
+export async function getQueryCityIds(poizvedba_id: number): Promise<number[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
     `
       SELECT kraj_id
@@ -118,7 +118,7 @@ export async function getQueryCityIds(poizvedbaId: number): Promise<number[]> {
       WHERE poizvedba_id = ?
       ORDER BY kraj_id ASC
     `,
-    [poizvedbaId],
+    [poizvedba_id],
   );
 
   return rows.map((row) => Number(row.kraj_id));
@@ -165,9 +165,9 @@ export async function createSearchQuery(data: {
       ],
     );
 
-    const poizvedbaId = insertResult.insertId;
+    const poizvedba_id = insertResult.insertId;
 
-    for (const krajId of data.kraji_ids) {
+    for (const kraj_id of data.kraji_ids) {
       await connection.query(
         `
           INSERT INTO poizvedba_kraj
@@ -177,13 +177,13 @@ export async function createSearchQuery(data: {
           )
           VALUES (?, ?)
         `,
-        [poizvedbaId, krajId],
+        [poizvedba_id, kraj_id],
       );
     }
 
     await connection.commit();
 
-    return poizvedbaId;
+    return poizvedba_id;
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -194,7 +194,7 @@ export async function createSearchQuery(data: {
 
 // Обновляет поисковый запрос и заново сохраняет связанные города
 export async function updateSearchQuery(
-  poizvedbaId: number,
+  poizvedba_id: number,
   data: {
     kategorija_id: number;
     kanal_id: number;
@@ -229,7 +229,7 @@ export async function updateSearchQuery(
         data.pogostost,
         data.ura_posiljanja,
         data.aktivna ? 1 : 0,
-        poizvedbaId,
+        poizvedba_id,
       ],
     );
 
@@ -243,10 +243,10 @@ export async function updateSearchQuery(
         DELETE FROM poizvedba_kraj
         WHERE poizvedba_id = ?
       `,
-      [poizvedbaId],
+      [poizvedba_id],
     );
 
-    for (const krajId of data.kraji_ids) {
+    for (const kraj_id of data.kraji_ids) {
       await connection.query(
         `
           INSERT INTO poizvedba_kraj
@@ -256,7 +256,7 @@ export async function updateSearchQuery(
           )
           VALUES (?, ?)
         `,
-        [poizvedbaId, krajId],
+        [poizvedba_id, kraj_id],
       );
     }
 
@@ -272,13 +272,13 @@ export async function updateSearchQuery(
 }
 
 // Удаляет поисковый запрос
-export async function deleteSearchQuery(poizvedbaId: number): Promise<boolean> {
+export async function deleteSearchQuery(poizvedba_id: number): Promise<boolean> {
   const [result] = await pool.query<ResultSetHeader>(
     `
       DELETE FROM iskalna_poizvedba
       WHERE poizvedba_id = ?
     `,
-    [poizvedbaId],
+    [poizvedba_id],
   );
 
   return result.affectedRows > 0;
