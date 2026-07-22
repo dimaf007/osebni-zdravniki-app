@@ -26,3 +26,4 @@ yarn-error.log*
 # system
 .DS_Store
 Thumbs.dbback-end/data/*.xlsx
+back-end/data/*.xlsx
