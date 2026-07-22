@@ -1,15 +1,24 @@
 /**
  * Osrednja servisna plast za uvoz podatkov o zdravnikih iz strani ZZZS.
+ * Ta datoteka vsebuje:
+ * - branje trenutnega statusa uvoza,
+ * - preverjanje, ali je bil današnji uvoz že uspešno izveden,
+ * - posodabljanje statusa uvoza,
+ * - upsert logiko za posamezne tabele,
+ * - glavni uvozni proces iz ZZZS,
+ * - zaščitno ovojnico za varen zagon uvoza,
+ * - SQL zaklep (GET_LOCK / RELEASE_LOCK), ki prepreči,
+ *   da bi isti uvoz hkrati zagnalo več instanc aplikacije.
  */
 
 import pool from '../../config/db.js';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { fetchLatestExcelLinks, downloadExcel } from './zzzs-source.service.js';
 import { parseAndNormalize } from './zzzs-parser.service.js';
 
 interface ImportStatusRow extends RowDataPacket {
   import_status_id: number;
-  datum_uvoza: string | null;
+  datum_uvoza: Date | string | null;
   status: string;
 }
 
@@ -21,6 +30,14 @@ interface IdRow extends RowDataPacket {
   dodatna_ambulanta_id?: number;
 }
 
+interface LockRow extends RowDataPacket {
+  acquired?: number | null;
+  released?: number | null;
+}
+
+const IMPORT_LOCK_NAME = 'osebni_zdravniki.zzzs_import_lock';
+
+// Vrne trenutno vrstico statusa uvoza iz tabele import_status.
 export async function getImportStatus(): Promise<ImportStatusRow | null> {
   const [rows] = await pool.query<ImportStatusRow[]>(
     `
@@ -34,13 +51,31 @@ export async function getImportStatus(): Promise<ImportStatusRow | null> {
   return rows[0] ?? null;
 }
 
+// Preveri, ali je bil uvoz danes že uspešno zaključen.
 export async function isFreshToday(): Promise<boolean> {
   const status = await getImportStatus();
-  if (!status?.datum_uvoza || status.status !== 'done') return false;
+
+  if (!status?.datum_uvoza || status.status !== 'done') {
+    return false;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
-  return status.datum_uvoza.slice(0, 10) === today;
+
+  // Če mysql2 vrne datum kot niz, lahko neposredno uporabimo slice().
+  if (typeof status.datum_uvoza === 'string') {
+    return status.datum_uvoza.slice(0, 10) === today;
+  }
+
+  // Če mysql2 vrne datum kot objekt Date, ga pretvorimo v ISO niz.
+  if (status.datum_uvoza instanceof Date) {
+    return status.datum_uvoza.toISOString().slice(0, 10) === today;
+  }
+
+  return false;
 }
 
+// Posodobi status uvoza v bazi.
+// Če je status "done", hkrati zapišemo tudi čas zadnjega uspešnega uvoza.
 export async function setImportStatus(
   status: 'idle' | 'running' | 'done' | 'error',
 ): Promise<void> {
@@ -56,6 +91,82 @@ export async function setImportStatus(
     `UPDATE import_status SET status = ? WHERE import_status_id = 1`,
     [status],
   );
+}
+
+// Poskusi pridobiti globalni uporabniški zaklep v MySQL.
+// Zaklep je vezan na točno določeno povezavo (connection), zato moramo
+// to povezavo hraniti odprto ves čas trajanja uvoza.
+//
+// GET_LOCK(..., 0) pomeni:
+// - če je zaklep prost, ga dobimo takoj;
+// - če ga že drži druga instanca, ne čakamo in dobimo rezultat 0.
+//
+// Vrne objekt z odprto connection povezavo samo v primeru,
+// ko je bil zaklep uspešno pridobljen.
+async function acquireImportLock(): Promise<PoolConnection | null> {
+  const connection = await pool.getConnection();
+
+  try {
+    const [rows] = await connection.query<LockRow[]>(
+      `SELECT GET_LOCK(?, 0) AS acquired`,
+      [IMPORT_LOCK_NAME],
+    );
+
+    if (rows[0]?.acquired === 1) {
+      return connection;
+    }
+
+    connection.release();
+    return null;
+  } catch (error) {
+    connection.release();
+    throw error;
+  }
+}
+
+// Sprosti globalni uporabniški zaklep.
+// Zaklep mora sprostiti ista connection povezava, ki ga je pridobila.
+async function releaseImportLock(connection: PoolConnection): Promise<void> {
+  try {
+    await connection.query<LockRow[]>(
+      `SELECT RELEASE_LOCK(?) AS released`,
+      [IMPORT_LOCK_NAME],
+    );
+  } finally {
+    connection.release();
+  }
+}
+
+// Varno sproži uvoz le takrat, ko je to smiselno.
+// Ta funkcija je primerna tako za samodejni zagon ob startu strežnika
+// kot tudi za ročni zagon prek endpointa POST /run.
+//
+// Zaščita poteka v več korakih:
+// 1. poskusimo pridobiti SQL zaklep;
+// 2. če zaklepa ne dobimo, pomeni, da druga instanca že izvaja uvoz;
+// 3. če zaklep dobimo, preverimo še svežino podatkov;
+// 4. šele nato sprožimo glavni uvoz.
+export async function runZzzsImportIfNeeded(
+  options: { force?: boolean } = {},
+): Promise<'started' | 'skipped-locked' | 'skipped-fresh'> {
+  const { force = false } = options;
+
+  const lockConnection = await acquireImportLock();
+
+  if (!lockConnection) {
+    return 'skipped-locked';
+  }
+
+  try {
+    if (!force && (await isFreshToday())) {
+      return 'skipped-fresh';
+    }
+
+    await runZzzsImport();
+    return 'started';
+  } finally {
+    await releaseImportLock(lockConnection);
+  }
 }
 
 export async function upsertKraj(
@@ -219,6 +330,14 @@ export async function upsertDodatnaAmbulanta(
   );
 }
 
+// Glavni uvozni proces:
+// 1. status nastavimo na "running",
+// 2. pridobimo aktualne Excel povezave iz strani ZZZS,
+// 3. prenesemo datoteke,
+// 4. jih razčlenimo in normaliziramo,
+// 5. podatke zapišemo v bazo,
+// 6. ob uspehu status nastavimo na "done",
+// 7. ob napaki status nastavimo na "error".
 export async function runZzzsImport(): Promise<void> {
   await setImportStatus('running');
 

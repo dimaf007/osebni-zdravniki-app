@@ -1,12 +1,13 @@
 /**
  * HTTP kontroler za modul uvoza podatkov. Izpostavlja dva endpointa:
- * pridobivanje trenutnega stanja uvoza (GET /status) in ročno sprožitev
- * uvoza podatkov iz ZZZS (POST /run). Vso poslovno logiko delegira
- * na import.service.ts.
+ * - pridobivanje trenutnega stanja uvoza (GET /status)
+ * - ročno sprožitev uvoza podatkov iz ZZZS (POST /run)
+ *
+ * Poslovno logiko delegira na import.service.ts.
  */
 
 import { NextFunction, Request, Response } from 'express';
-import { getImportStatus, runZzzsImport } from './import.service.js';
+import { getImportStatus, runZzzsImportIfNeeded } from './import.service.js';
 
 // Vrne trenutno stanje uvoza (idle, running, done, error) in datum zadnjega uvoza.
 export async function getImportStatusController(
@@ -37,14 +38,20 @@ export async function getImportStatusController(
   }
 }
 
-// Sproži ročni uvoz podatkov iz ZZZS. Uvoz teče v ozadju, odziv se vrne takoj.
+// Sproži ročni uvoz podatkov iz ZZZS.
+// Uvoz teče v ozadju, odziv pa se vrne takoj.
+//
+// Pri ročnem zagonu uporabimo force: true, kar pomeni,
+// da preskočimo preverjanje, ali je bil uvoz danes že narejen.
+// Kljub temu SQL zaklep še vedno prepreči, da bi več instanc
+// istočasno začelo isti uvoz.
 export async function triggerImportController(
   _req: Request,
   res: Response,
   next: NextFunction,
 ) {
   try {
-    runZzzsImport().catch((err) => {
+    runZzzsImportIfNeeded({ force: true }).catch((err) => {
       console.error('Napaka pri uvozu:', err);
     });
 
