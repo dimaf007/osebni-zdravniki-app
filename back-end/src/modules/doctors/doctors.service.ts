@@ -206,14 +206,10 @@ async function getAdditionalAmbulancesRows(
 async function getLastUpdatedAt(): Promise<string | null> {
   const [rows] = await pool.query<UpdatedAtRow[]>(
     `
-    SELECT DATE_FORMAT(MAX(posodobljeno_ob), '%Y-%m-%d %H:%i:%s') AS updated_at
-    FROM (
-      SELECT MAX(z.posodobljeno_ob) AS posodobljeno_ob
-      FROM zdravnik z
-      UNION ALL
-      SELECT MAX(da.posodobljeno_ob) AS posodobljeno_ob
-      FROM dodatna_ambulanta da
-    ) AS combined_updates
+    SELECT DATE_FORMAT(datum_uvoza, '%Y-%m-%d %H:%i:%s') AS updated_at
+    FROM import_status
+    WHERE import_status_id = 1
+    LIMIT 1
     `,
   )
 

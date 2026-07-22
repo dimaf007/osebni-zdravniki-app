@@ -1,6 +1,7 @@
 ﻿// Ta datoteka predstavlja stran za prikaz ene naročnine.
 // Stran naloži podatke o izbrani naročnini in šifrant krajev,
 // da lahko uporabniku prikažemo imena krajev namesto ID-jev.
+// Uporabnik lahko s te strani preide tudi na urejanje naročnine.
 
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -12,29 +13,33 @@ import type { CityLookup } from '../types/lookups-types'
 import type { Subscription } from '../types/subscription-types'
 
 export default function SingleSubscriptionPage() {
-  const { subscription_id } = useParams()
+  // Iz URL-ja preberemo ID naročnine in preverimo stanje prijave.
+  const { id } = useParams()
   const { user, is_authenticated } = use_auth()
 
+  // Ti state-i hranijo naročnino, šifrant krajev ter stanja nalaganja in napake.
   const [subscription, set_subscription] = useState<Subscription | null>(null)
   const [cities, set_cities] = useState<CityLookup[]>([])
   const [loading, set_loading] = useState(true)
   const [error, set_error] = useState<string | null>(null)
 
+  // Ta effect ob odprtju strani naloži podatke naročnine in seznam krajev.
   useEffect(() => {
-    if (!is_authenticated || !user || !subscription_id) {
+    if (!is_authenticated || !user || !id) {
       set_loading(false)
       return
     }
 
     let cancelled = false
 
+    // Ta funkcija hkrati pridobi naročnino in šifrant krajev.
     async function load_data() {
       try {
         set_loading(true)
         set_error(null)
 
         const [subscription_data, cities_data] = await Promise.all([
-          fetch_subscription_by_id(Number(subscription_id)),
+          fetch_subscription_by_id(Number(id)),
           fetch_cities(),
         ])
 
@@ -55,11 +60,13 @@ export default function SingleSubscriptionPage() {
 
     load_data()
 
+    // Cleanup prepreči posodobitev state-a po odstranitvi komponente.
     return () => {
       cancelled = true
     }
-  }, [is_authenticated, user, subscription_id])
+  }, [is_authenticated, user, id])
 
+  // Pripravi prikaz zunanjega ID-ja kanala; če manjka, vrne nadomestno besedilo.
   function format_zunanji_id(value: string | null) {
     if (!value || value.trim() === '') {
       return 'Ni nastavljeno'
@@ -68,6 +75,7 @@ export default function SingleSubscriptionPage() {
     return value
   }
 
+  // Pretvori seznam ID-jev krajev v berljiv seznam nazivov krajev.
   function format_kraji(kraji_ids: number[]) {
     if (kraji_ids.length === 0) {
       return 'Ni izbranih krajev'
@@ -79,6 +87,20 @@ export default function SingleSubscriptionPage() {
         return city ? city.celoten_naziv : `Kraj #${id}`
       })
       .join(', ')
+  }
+
+  // Pogostost pretvori v uporabniku prijazen opis.
+  function format_pogostost(value: number) {
+    if (value === 1) {
+      return 'Vsak dan'
+    }
+
+    return `Vsakih ${value} dni`
+  }
+
+  // Iz časa izpiše samo ure in minute.
+  function format_ura(value: string) {
+    return value.slice(0, 5)
   }
 
   if (!is_authenticated || !user) {
@@ -104,6 +126,9 @@ export default function SingleSubscriptionPage() {
       <main>
         <h1>Naročnina</h1>
         <p>{error}</p>
+        <p>
+          <Link to="/subscriptions">Nazaj na naročnine</Link>
+        </p>
       </main>
     )
   }
@@ -113,6 +138,9 @@ export default function SingleSubscriptionPage() {
       <main>
         <h1>Naročnina</h1>
         <p>Naročnina ni bila najdena.</p>
+        <p>
+          <Link to="/subscriptions">Nazaj na naročnine</Link>
+        </p>
       </main>
     )
   }
@@ -138,11 +166,11 @@ export default function SingleSubscriptionPage() {
         </p>
 
         <p>
-          <strong>Pogostost:</strong> {subscription.pogostost}
+          <strong>Pogostost:</strong> {format_pogostost(subscription.pogostost)}
         </p>
 
         <p>
-          <strong>Čas pošiljanja:</strong> {subscription.ura_posiljanja}
+          <strong>Čas pošiljanja:</strong> {format_ura(subscription.ura_posiljanja)}
         </p>
 
         <p>

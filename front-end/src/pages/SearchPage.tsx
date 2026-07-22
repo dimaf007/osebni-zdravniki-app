@@ -1,16 +1,11 @@
-﻿// Ta datoteka predstavlja javno stran za iskanje.
-// Uporabnik lahko brez prijave izbere kategorijo in do 3 kraje,
-// nato pa se rezultati iskanja prikažejo na istem zaslonu.
-// Če se uporabnik odloči ustvariti naročnino, ga lahko preusmerimo
-// na prijavo ali neposredno na ustvarjanje naročnine.
-
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import SubscriptionQueryForm, {
   type SearchQueryFormState,
 } from '../components/SubscriptionQueryForm'
 import { use_auth } from '../context/AuthContext'
+import { API_URL } from '../api/api-config'
 
 interface SearchDoctorItem {
   zdravnik_id: number
@@ -71,53 +66,26 @@ export default function SearchPage() {
   const [results, set_results] = useState<SearchResponseData | null>(null)
   const [has_searched, set_has_searched] = useState(false)
 
-  // Ta funkcija začasno simulira odgovor backend API-ja,
-  // vendar v obliki, ki je bližje končni strukturi rezultatov.
   async function run_search(query: SearchQueryFormState): Promise<SearchResponseData> {
-    await new Promise((resolve) => setTimeout(resolve, 500))
 
-    return {
-      updated_at: new Date().toLocaleString('sl-SI'),
-      filters: {
-        kraji_ids: query.kraji_ids,
-        kategorije_ids: [query.kategorija_id],
-      },
-      cities: query.kraji_ids.map((kraj_id, index) => ({
-        kraj_id,
-        posta: null,
-        naziv_kraja: `Kraj ${index + 1}`,
-        celoten_naziv: `Izbran kraj ${kraj_id}`,
-        categories: [
-          {
-            kategorija_id: query.kategorija_id,
-            naziv_kategorije: `Kategorija ${query.kategorija_id}`,
-            oznaka_kategorije: null,
-            doctors: [
-              {
-                zdravnik_id: Number(`${query.kategorija_id}${kraj_id}${index + 1}`),
-                sifra_zdravnika: null,
-                priimek_ime: `Zdravnik ${index + 1}`,
-                sprejema: true,
-                dejavnost_id: query.kategorija_id,
-                naziv_dejavnosti: `Dejavnost ${query.kategorija_id}`,
-                izvajalec_id: kraj_id,
-                naziv_izvajalca: `Izvajalec za kraj ${kraj_id}`,
-                ulica: `Naslov ${index + 1}`,
-              },
-            ],
-          },
-        ],
-        dodatne_ambulante: [
-          {
-            dodatna_ambulanta_id: Number(`9${kraj_id}${index + 1}`),
-            naziv_ambulante: `Dodatna ambulanta ${index + 1}`,
-            ulica: `Dodatni naslov ${index + 1}`,
-            izvajalec_id: kraj_id,
-            naziv_izvajalca: `Dodatni izvajalec ${kraj_id}`,
-          },
-        ],
-      })),
-    }
+    const response = await fetch(`${API_URL}/api/doctors/search`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      kraji_ids: query.kraji_ids,
+      kategorije_ids: [query.kategorija_id],
+    }),
+  })
+
+  const payload = await response.json()
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.message || 'Search request failed')
+  }
+
+  return payload.data
   }
 
   async function handle_submit(event: React.FormEvent<HTMLFormElement>) {
@@ -179,6 +147,22 @@ export default function SearchPage() {
     })
   }
 
+  function count_total_doctors(data: SearchResponseData): number {
+    return data.cities.reduce((city_total, city) => {
+      const doctors_in_city = city.categories.reduce((category_total, category) => {
+        return category_total + category.doctors.length
+      }, 0)
+
+      return city_total + doctors_in_city
+    }, 0)
+  }
+
+  function has_any_accepting_doctors(city: SearchCityGroup): boolean {
+    return city.categories.some((category) =>
+      category.doctors.some((doctor) => doctor.sprejema)
+    )
+  }
+
   return (
     <main className="subscriptions-page">
       <h1>Iskanje zdravnikov</h1>
@@ -197,7 +181,7 @@ export default function SearchPage() {
 
         <div className="auth-actions">
           <button type="submit" disabled={loading}>
-            {loading ? 'Iskanje...' : 'Išči'}
+            {loading ? 'Iskanje poteka...' : 'Išči'}
           </button>
         </div>
       </form>
@@ -206,85 +190,124 @@ export default function SearchPage() {
         <h2>Rezultati iskanja</h2>
 
         {!loading && has_searched && !results && (
-          <p className="status-message">Ni rezultatov.</p>
-        )}
-
-        {!loading && has_searched && results && results.updated_at && (
           <p className="status-message">
-            Zadnja posodobitev podatkov: {results.updated_at}
+            Za izbrane kriterije trenutno ni rezultatov.
           </p>
         )}
 
-        {results?.cities.map((city) => (
-          <article key={city.kraj_id} className="subscription-card">
-            <div className="subscription-title">
-              <strong>{city.celoten_naziv || city.naziv_kraja || `Kraj ${city.kraj_id}`}</strong>
+        {!loading && has_searched && results && (
+          <>
+            <div className="search-summary">
+              <span className="search-summary-badge">
+                Najdeni kraji: {results.cities.length}
+              </span>
+              <span className="search-summary-badge">
+                Zdravniki: {count_total_doctors(results)}
+              </span>
             </div>
 
-            {city.categories.length === 0 && (
-              <p className="subscription-row">
-                Za izbrano kategorijo v tem kraju trenutno ni najdenih zdravnikov,
-                ki sprejemajo nove paciente.
-              </p>
-            )}
+            <p className="status-message">
+                Zadnja posodobitev podatkov:{' '}
+                {results.updated_at ? results.updated_at : 'ni podatka'}
+            </p>
 
-            {city.categories.map((category) => (
-              <section key={category.kategorija_id}>
+            {results.cities.map((city) => (
+              <article key={city.kraj_id} className="subscription-card">
+                <div className="subscription-title">
+                  <strong>{city.celoten_naziv || city.naziv_kraja}</strong>
+                </div>
+
                 <p className="subscription-row">
-                  <strong>Kategorija:</strong> {category.naziv_kategorije}
+                  {has_any_accepting_doctors(city)
+                    ? 'V tem kraju so na voljo zdravniki, ki sprejemajo nove paciente.'
+                    : 'V tem kraju trenutno ni zdravnikov, ki sprejemajo nove paciente.'}
                 </p>
 
-                {category.doctors.length === 0 ? (
+                {city.categories.length === 0 ? (
                   <p className="subscription-row">
-                    V tej kategoriji ni najdenih zdravnikov.
+                    Za izbrano kategorijo v tem kraju trenutno ni zdravnikov.
                   </p>
                 ) : (
-                  <ul className="subscription-row">
-                    {category.doctors.map((doctor) => (
-                      <li key={doctor.zdravnik_id}>
-                        <strong>{doctor.priimek_ime}</strong>
-                        {' — '}
-                        {doctor.naziv_izvajalca}
-                        {doctor.ulica ? `, ${doctor.ulica}` : ''}
-                      </li>
-                    ))}
-                  </ul>
+                  city.categories.map((category) => (
+                    <section key={category.kategorija_id}>
+                      <p className="subscription-row">
+                        <strong>Kategorija:</strong> {category.naziv_kategorije}
+                      </p>
+
+                      {category.doctors.length === 0 ? (
+                        <p className="subscription-row">
+                          V tej kategoriji ni najdenih zdravnikov.
+                        </p>
+                      ) : (
+                        <div className="subscription-row">
+                          {category.doctors.map((doctor) => (
+                            <div key={doctor.zdravnik_id} className="search-result-item">
+                              <p>
+                                <strong>{doctor.priimek_ime}</strong>
+                              </p>
+                              <p>{doctor.naziv_izvajalca}</p>
+                              {doctor.ulica && (
+                                <p className="search-result-meta">{doctor.ulica}</p>
+                              )}
+                              <span
+                                className={
+                                  doctor.sprejema
+                                    ? 'search-result-status'
+                                    : 'search-result-status inactive'
+                                }
+                              >
+                                {doctor.sprejema
+                                  ? 'Sprejema nove paciente'
+                                  : 'Trenutno ne sprejema novih pacientov'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  ))
                 )}
-              </section>
+
+                <section>
+                  <p className="subscription-row">
+                    <strong>Dodatne ambulante:</strong>
+                  </p>
+
+                  {city.dodatne_ambulante.length === 0 ? (
+                    <p className="subscription-row">
+                      Za ta kraj ni dodatnih ambulant.
+                    </p>
+                  ) : (
+                    <div className="subscription-row">
+                      {city.dodatne_ambulante.map((ambulance) => (
+                        <div
+                          key={ambulance.dodatna_ambulanta_id}
+                          className="search-result-item"
+                        >
+                          <p>
+                            <strong>{ambulance.naziv_ambulante}</strong>
+                          </p>
+                          <p>{ambulance.naziv_izvajalca}</p>
+                          {ambulance.ulica && (
+                            <p className="search-result-meta">{ambulance.ulica}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </article>
             ))}
-
-            <section>
-              <p className="subscription-row">
-                <strong>Dodatne ambulante:</strong>
-              </p>
-
-              {city.dodatne_ambulante.length === 0 ? (
-                <p className="subscription-row">
-                  Za ta kraj ni dodatnih ambulant.
-                </p>
-              ) : (
-                <ul className="subscription-row">
-                  {city.dodatne_ambulante.map((ambulance) => (
-                    <li key={ambulance.dodatna_ambulanta_id}>
-                      <strong>{ambulance.naziv_ambulante}</strong>
-                      {' — '}
-                      {ambulance.naziv_izvajalca}
-                      {ambulance.ulica ? `, ${ambulance.ulica}` : ''}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
 
             <div className="auth-actions">
               <button type="button" onClick={handle_create_subscription}>
                 {is_authenticated
-                  ? 'Ustvari naročnino'
-                  : 'Prijava za ustvarjanje naročnine'}
+                  ? 'Ustvari naročnino za to iskanje'
+                  : 'Prijavi se za ustvarjanje naročnine'}
               </button>
             </div>
-          </article>
-        ))}
+          </>
+        )}
       </section>
     </main>
   )

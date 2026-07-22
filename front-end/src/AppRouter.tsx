@@ -13,6 +13,7 @@ import MySubscriptionsPage from './pages/MySubscriptionsPage'
 import SingleSubscriptionPage from './pages/SingleSubscriptionPage'
 import EditSubscriptionPage from './pages/EditSubscriptionPage'
 import CreateSubscriptionPage from './pages/CreateSubscriptionPage'
+import DeleteAccountPage from './pages/DeleteAccountPage'
 
 export default function AppRouter() {
   return (
@@ -20,16 +21,15 @@ export default function AppRouter() {
       <Menu />
 
       <Routes>
-        <Route path="/" element={<Navigate to="/search" replace />} />
-        <Route path="/search" element={<SearchPage />} />
-
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-
+        <Route path="/" element={<SearchPage />} />
         <Route path="/subscriptions" element={<MySubscriptionsPage />} />
-        <Route path="/subscriptions/create" element={<CreateSubscriptionPage />} />
         <Route path="/subscriptions/:id" element={<SingleSubscriptionPage />} />
         <Route path="/subscriptions/:id/edit" element={<EditSubscriptionPage />} />
+        <Route path="/create-subscription" element={<CreateSubscriptionPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

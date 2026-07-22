@@ -1,6 +1,6 @@
 ﻿// Ta komponenta prikaže eno naročnino v obliki kartice.
 // Na kartici se izpišejo osnovni podatki naročnine,
-// uporabniku pa omogoča prehod na podrobnosti naročnine.
+// uporabniku pa omogoča prehod na urejanje naročnine.
 
 import { Link } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ export default function SubscriptionCard({
   subscription,
   placeNamesById,
 }: SubscriptionCardProps) {
+  // Pretvori seznam ID-jev krajev v berljivo besedilo z dejanskimi nazivi krajev.
   function formatKraji(krajiIds: number[]) {
     if (krajiIds.length === 0) {
       return 'Ni izbranih krajev'
@@ -25,6 +26,7 @@ export default function SubscriptionCard({
       .join(', ')
   }
 
+  // Pripravi prikaz cilja pošiljanja; če vrednost manjka, izpiše nadomestno besedilo.
   function formatChannelTarget(value: string | null) {
     if (!value || value.trim() === '') {
       return 'Ni nastavljeno'
@@ -33,6 +35,7 @@ export default function SubscriptionCard({
     return value
   }
 
+  // Pogostost pretvori v bolj prijazen opis za uporabnika.
   function formatFrequency(value: number) {
     if (value === 1) {
       return 'Vsak dan'
@@ -41,6 +44,7 @@ export default function SubscriptionCard({
     return `Vsakih ${value} dni`
   }
 
+  // Iz časa vzame samo ure in minute.
   function formatTime(value: string) {
     return value.slice(0, 5)
   }
@@ -83,7 +87,7 @@ export default function SubscriptionCard({
 
       <Link
         className="subscription-link"
-        to={`/subscriptions/${subscription.poizvedba_id}`}
+        to={`/subscriptions/${subscription.poizvedba_id}/edit`}
       >
         Uredi naročnino
       </Link>
