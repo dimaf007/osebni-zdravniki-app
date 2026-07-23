@@ -1,18 +1,19 @@
-﻿// Uvozimo TypeScript tipe za eno naročnino ter za odgovora backend API-ja
-// pri pridobivanju seznama naročnin in posamezne naročnine.
+﻿// Ta datoteka vsebuje front-end API funkcije za delo z naročninami.
+// Skrbi za pošiljanje HTTP zahtev na back-end, tipizacijo odgovorov
+// ter enotno obravnavo napak pri nalaganju, ustvarjanju in posodabljanju naročnin.
+
 import type {
   GetSubscriptionResponse,
   GetSubscriptionsResponse,
   Subscription,
-} from '../types/subscription-types'
+} from '../types/subscription-types';
 
 // Osnovni URL backend strežnika preberemo iz .env datoteke.
 // Če Vite ne prebere .env pravilno, uporabimo rezervni naslov backend-a.
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://88.200.63.148:30033'
+  import.meta.env.VITE_API_BASE_URL || 'http://88.200.63.148:30033';
 
 // Ta vmesnik opisuje podatke, ki jih pošljemo backendu pri posodobitvi naročnine.
-// Vključuje polja, ki jih uporabnik lahko spremeni na obrazcu za urejanje.
 export interface UpdateSubscriptionPayload {
   kategorija_id: number
   kanal_id: number
@@ -38,15 +39,13 @@ export interface CreateSubscriptionPayload {
 // Ta vmesnik opisuje odgovor backend API-ja po uspešnem ustvarjanju naročnine.
 export interface CreateSubscriptionResponse {
   success: boolean
+  message?: string
   data: {
     poizvedba_id: number
   }
 }
 
 // Ta funkcija pridobi vse naročnine za določenega uporabnika.
-// Uporabnik_id pošljemo kot query parameter v GET zahtevi.
-// Če HTTP odgovor ni uspešen ali backend vrne success = false,
-// funkcija sproži napako. V nasprotnem primeru vrne seznam naročnin.
 export async function fetch_subscriptions(
   uporabnik_id: number,
 ): Promise<Subscription[]> {
@@ -74,9 +73,6 @@ export async function fetch_subscriptions(
 }
 
 // Ta funkcija pridobi eno konkretno naročnino glede na njen ID.
-// Pošlje GET zahtevo na endpoint /api/queries/:id.
-// Če zahteva ni uspešna ali backend vrne neuspešen odgovor,
-// funkcija sproži napako. Če je vse v redu, vrne eno naročnino.
 export async function fetch_subscription_by_id(
   id: number,
 ): Promise<Subscription> {
@@ -101,9 +97,6 @@ export async function fetch_subscription_by_id(
 }
 
 // Ta funkcija posodobi obstoječo naročnino glede na njen ID.
-// Backendu pošljemo PUT zahtevo z JSON podatki iz obrazca.
-// Če odgovor ni uspešen, funkcija sproži napako.
-// Ob uspehu vrne posodobljeno naročnino.
 export async function update_subscription(
   id: number,
   payload: UpdateSubscriptionPayload,
@@ -130,7 +123,7 @@ export async function update_subscription(
   return json.data
 }
 
-// Ta funkcija ustvari novo naročnino preko POST zahteve.
+// Ta funkcija ustvari novo naročnino preko POST zahteve in vrne ID nove poizvedbe.
 export async function create_subscription(
   payload: CreateSubscriptionPayload,
 ): Promise<number> {
@@ -153,5 +146,11 @@ export async function create_subscription(
     throw new Error('Backend returned error for create subscription')
   }
 
-  return json.data.poizvedba_id
+  const created_id = Number(json.data?.poizvedba_id)
+
+  if (!created_id || Number.isNaN(created_id)) {
+    throw new Error('Backend ni vrnil veljavnega ID-ja naročnine.')
+  }
+
+  return created_id
 }

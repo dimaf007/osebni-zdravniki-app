@@ -26,4 +26,8 @@ yarn-error.log*
 # system
 .DS_Store
 Thumbs.dbback-end/data/*.xlsx
+<<<<<<< HEAD
+=======
+
+>>>>>>> Fix ZZZS import startup and status handling
 back-end/data/*.xlsx

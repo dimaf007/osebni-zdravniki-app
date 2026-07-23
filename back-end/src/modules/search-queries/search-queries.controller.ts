@@ -1,3 +1,7 @@
+// Ta datoteka vsebuje Express kontrolerje za modul iskalnih poizvedb.
+// Kontrolerji skrbijo za branje vhodnih podatkov iz HTTP zahtevkov,
+// osnovno validacijo, klic servisne plasti in vračanje enotnih JSON odgovorov.
+
 import { NextFunction, Request, Response } from 'express';
 import {
   countActiveQueriesByUserId,
@@ -9,7 +13,7 @@ import {
   updateSearchQuery,
 } from './search-queries.service.js';
 
-// Возвращает все поисковые запросы пользователя
+// Vrne vse iskalne poizvedbe za podanega uporabnika.
 export async function getSearchQueriesController(
   req: Request,
   res: Response,
@@ -18,7 +22,7 @@ export async function getSearchQueriesController(
   try {
     const uporabnikId = Number(req.query.uporabnik_id);
 
-    if (!uporabnikId) {
+    if (!uporabnikId || Number.isNaN(uporabnikId)) {
       res.status(400).json({
         success: false,
         message: 'uporabnik_id is required',
@@ -49,7 +53,7 @@ export async function getSearchQueriesController(
   }
 }
 
-// Возвращает один поисковый запрос по id
+// Vrne eno iskalno poizvedbo glede na njen ID.
 export async function getSearchQueryByIdController(
   req: Request,
   res: Response,
@@ -58,7 +62,7 @@ export async function getSearchQueryByIdController(
   try {
     const poizvedba_id = Number(req.params.id);
 
-    if (!poizvedba_id) {
+    if (!poizvedba_id || Number.isNaN(poizvedba_id)) {
       res.status(400).json({
         success: false,
         message: 'Invalid query id',
@@ -91,7 +95,7 @@ export async function getSearchQueryByIdController(
   }
 }
 
-// Создаёт новый поисковый запрос
+// Ustvari novo iskalno poizvedbo in vrne ID ustvarjenega zapisa.
 export async function createSearchQueryController(
   req: Request,
   res: Response,
@@ -104,19 +108,27 @@ export async function createSearchQueryController(
     const zunanji_id_kanala = req.body.zunanji_id_kanala?.trim();
     const pogostost = Number(req.body.pogostost);
     const ura_posiljanja = req.body.ura_posiljanja?.trim();
-    const aktivna = req.body.aktivna === undefined
+    const aktivna =
+      req.body.aktivna === undefined
         ? true
         : req.body.aktivna === true || req.body.aktivna === 'true';
+
     const kraji_ids = Array.isArray(req.body.kraji_ids)
-      ? req.body.kraji_ids.map(Number).filter(Boolean)
+      ? req.body.kraji_ids
+          .map(Number)
+          .filter((value) => !Number.isNaN(value) && value > 0)
       : [];
 
     if (
       !uporabnik_id ||
+      Number.isNaN(uporabnik_id) ||
       !kategorija_id ||
+      Number.isNaN(kategorija_id) ||
       !kanal_id ||
+      Number.isNaN(kanal_id) ||
       !zunanji_id_kanala ||
       !pogostost ||
+      Number.isNaN(pogostost) ||
       !ura_posiljanja ||
       kraji_ids.length === 0
     ) {
@@ -149,17 +161,22 @@ export async function createSearchQueryController(
       kraji_ids,
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Search query created',
-      poizvedba_id: newQueryId,
-    });
+    res
+      .status(201)
+      .location(`/api/queries/${newQueryId}`)
+      .json({
+        success: true,
+        message: 'Search query created',
+        data: {
+          poizvedba_id: newQueryId,
+        },
+      });
   } catch (error) {
     next(error);
   }
 }
 
-// Обновляет существующий поисковый запрос
+// Posodobi obstoječo iskalno poizvedbo.
 export async function updateSearchQueryController(
   req: Request,
   res: Response,
@@ -172,19 +189,27 @@ export async function updateSearchQueryController(
     const zunanji_id_kanala = req.body.zunanji_id_kanala?.trim();
     const pogostost = Number(req.body.pogostost);
     const ura_posiljanja = req.body.ura_posiljanja?.trim();
-    const aktivna = req.body.aktivna === undefined
-      ? true
-      : req.body.aktivna === true || req.body.aktivna === "true";
+    const aktivna =
+      req.body.aktivna === undefined
+        ? true
+        : req.body.aktivna === true || req.body.aktivna === 'true';
+
     const kraji_ids = Array.isArray(req.body.kraji_ids)
-      ? req.body.kraji_ids.map(Number).filter(Boolean)
+      ? req.body.kraji_ids
+          .map(Number)
+          .filter((value) => !Number.isNaN(value) && value > 0)
       : [];
 
     if (
       !poizvedba_id ||
+      Number.isNaN(poizvedba_id) ||
       !kategorija_id ||
+      Number.isNaN(kategorija_id) ||
       !kanal_id ||
+      Number.isNaN(kanal_id) ||
       !zunanji_id_kanala ||
       !pogostost ||
+      Number.isNaN(pogostost) ||
       !ura_posiljanja ||
       kraji_ids.length === 0
     ) {
@@ -245,7 +270,7 @@ export async function updateSearchQueryController(
   }
 }
 
-// Удаляет поисковый запрос
+// Izbriše iskalno poizvedbo glede na njen ID.
 export async function deleteSearchQueryController(
   req: Request,
   res: Response,
@@ -254,7 +279,7 @@ export async function deleteSearchQueryController(
   try {
     const poizvedba_id = Number(req.params.id);
 
-    if (!poizvedba_id) {
+    if (!poizvedba_id || Number.isNaN(poizvedba_id)) {
       res.status(400).json({
         success: false,
         message: 'Invalid query id',

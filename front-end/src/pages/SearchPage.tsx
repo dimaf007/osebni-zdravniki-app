@@ -129,7 +129,7 @@ export default function SearchPage() {
     }
 
     if (is_authenticated && user) {
-      navigate('/subscriptions/create', {
+      navigate('/create-subscription', {
         state: {
           subscription_prefill,
           source: 'search',

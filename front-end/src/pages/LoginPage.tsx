@@ -77,6 +77,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(event) => set_username(event.target.value)}
+              required
             />
           </div>
 
@@ -87,6 +88,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(event) => set_password(event.target.value)}
+              required
             />
           </div>
 

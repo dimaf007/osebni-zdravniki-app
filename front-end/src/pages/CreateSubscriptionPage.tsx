@@ -100,6 +100,7 @@ export default function CreateSubscriptionPage() {
     }
   }, [is_authenticated, user])
 
+  // Posodobi del obrazca, ki je skupen z iskalno stranjo.
   function handle_search_form_change(next_value: SearchQueryFormState) {
     set_form((previous) => ({
       ...previous,
@@ -108,6 +109,7 @@ export default function CreateSubscriptionPage() {
     }))
   }
 
+  // Posodobi polja obrazca glede na spremembo uporabniškega vnosa.
   function handle_change(
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
@@ -135,6 +137,7 @@ export default function CreateSubscriptionPage() {
     }))
   }
 
+  // Pošlje obrazec na backend in po uspehu preusmeri na novo naročnino.
   async function handle_submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -163,6 +166,10 @@ export default function CreateSubscriptionPage() {
         kraji_ids: form.kraji_ids,
       })
 
+      if (!new_subscription_id || Number.isNaN(new_subscription_id)) {
+        throw new Error('Backend ni vrnil veljavnega ID-ja naročnine.')
+      }
+
       navigate(`/subscriptions/${new_subscription_id}`)
     } catch (e) {
       set_error((e as Error).message)
@@ -175,9 +182,37 @@ export default function CreateSubscriptionPage() {
     return (
       <main className="subscriptions-page">
         <h1>Ustvari naročnino</h1>
-        <p className="status-message">
-          Za ustvarjanje naročnine se moraš prijaviti.
-        </p>
+
+        {location_state?.source === 'search' && (
+          <p className="status-message">
+            Podatki iskanja so pripravljeni. Za nadaljevanje se prijavi ali
+            registriraj.
+          </p>
+        )}
+
+        <div className="auth-actions">
+          <Link
+            to="/login"
+            state={{
+              redirect_to: '/create-subscription',
+              subscription_prefill,
+              source: location_state?.source,
+            }}
+          >
+            Prijava
+          </Link>
+
+          <Link
+            to="/register"
+            state={{
+              redirect_to: '/create-subscription',
+              subscription_prefill,
+              source: location_state?.source,
+            }}
+          >
+            Registracija
+          </Link>
+        </div>
       </main>
     )
   }

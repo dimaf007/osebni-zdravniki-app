@@ -3,7 +3,7 @@
 // da lahko uporabniku prikažemo imena krajev namesto ID-jev.
 // Uporabnik lahko s te strani preide tudi na urejanje naročnine.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { fetch_cities } from '../api/lookups-api'
@@ -17,6 +17,12 @@ export default function SingleSubscriptionPage() {
   const { id } = useParams()
   const { user, is_authenticated } = use_auth()
 
+  // ID iz URL-ja pretvorimo v število in preverimo, ali je veljaven.
+  const subscription_id = useMemo(() => {
+    const parsed_id = Number(id)
+    return id && !Number.isNaN(parsed_id) && parsed_id > 0 ? parsed_id : null
+  }, [id])
+
   // Ti state-i hranijo naročnino, šifrant krajev ter stanja nalaganja in napake.
   const [subscription, set_subscription] = useState<Subscription | null>(null)
   const [cities, set_cities] = useState<CityLookup[]>([])
@@ -25,7 +31,15 @@ export default function SingleSubscriptionPage() {
 
   // Ta effect ob odprtju strani naloži podatke naročnine in seznam krajev.
   useEffect(() => {
-    if (!is_authenticated || !user || !id) {
+    if (!is_authenticated || !user) {
+      set_loading(false)
+      return
+    }
+
+    if (!subscription_id) {
+      set_subscription(null)
+      set_cities([])
+      set_error('Neveljaven ID naročnine.')
       set_loading(false)
       return
     }
@@ -39,7 +53,7 @@ export default function SingleSubscriptionPage() {
         set_error(null)
 
         const [subscription_data, cities_data] = await Promise.all([
-          fetch_subscription_by_id(Number(id)),
+          fetch_subscription_by_id(subscription_id),
           fetch_cities(),
         ])
 
@@ -64,7 +78,7 @@ export default function SingleSubscriptionPage() {
     return () => {
       cancelled = true
     }
-  }, [is_authenticated, user, id])
+  }, [is_authenticated, user, subscription_id])
 
   // Pripravi prikaz zunanjega ID-ja kanala; če manjka, vrne nadomestno besedilo.
   function format_zunanji_id(value: string | null) {
@@ -82,9 +96,9 @@ export default function SingleSubscriptionPage() {
     }
 
     return kraji_ids
-      .map((id) => {
-        const city = cities.find((item) => item.kraj_id === id)
-        return city ? city.celoten_naziv : `Kraj #${id}`
+      .map((kraj_id) => {
+        const city = cities.find((item) => item.kraj_id === kraj_id)
+        return city ? city.celoten_naziv : `Kraj #${kraj_id}`
       })
       .join(', ')
   }
@@ -105,27 +119,27 @@ export default function SingleSubscriptionPage() {
 
   if (!is_authenticated || !user) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Naročnina</h1>
-        <p>Za ogled naročnine se moraš prijaviti.</p>
+        <p className="status-message">Za ogled naročnine se moraš prijaviti.</p>
       </main>
     )
   }
 
   if (loading) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Naročnina</h1>
-        <p>Nalaganje naročnine...</p>
+        <p className="status-message">Nalaganje naročnine...</p>
       </main>
     )
   }
 
   if (error) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Naročnina</h1>
-        <p>{error}</p>
+        <p className="status-message error-message">{error}</p>
         <p>
           <Link to="/subscriptions">Nazaj na naročnine</Link>
         </p>
@@ -135,9 +149,9 @@ export default function SingleSubscriptionPage() {
 
   if (!subscription) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Naročnina</h1>
-        <p>Naročnina ni bila najdena.</p>
+        <p className="status-message">Naročnina ni bila najdena.</p>
         <p>
           <Link to="/subscriptions">Nazaj na naročnine</Link>
         </p>
@@ -146,38 +160,38 @@ export default function SingleSubscriptionPage() {
   }
 
   return (
-    <main>
+    <main className="subscriptions-page">
       <h1>Naročnina</h1>
 
       <p>
         <Link to="/subscriptions">Nazaj na naročnine</Link>
       </p>
 
-      <article>
+      <article className="subscription-card">
         <h2>{subscription.naziv_kategorije}</h2>
 
-        <p>
+        <p className="subscription-row">
           <strong>Kanal:</strong> {subscription.naziv_kanala}
         </p>
 
-        <p>
+        <p className="subscription-row">
           <strong>Zunanji ID kanala:</strong>{' '}
           {format_zunanji_id(subscription.zunanji_id_kanala)}
         </p>
 
-        <p>
+        <p className="subscription-row">
           <strong>Pogostost:</strong> {format_pogostost(subscription.pogostost)}
         </p>
 
-        <p>
+        <p className="subscription-row">
           <strong>Čas pošiljanja:</strong> {format_ura(subscription.ura_posiljanja)}
         </p>
 
-        <p>
+        <p className="subscription-row">
           <strong>Kraji:</strong> {format_kraji(subscription.kraji_ids)}
         </p>
 
-        <p>
+        <p className="subscription-row">
           <strong>Aktivna:</strong> {subscription.aktivna ? 'Da' : 'Ne'}
         </p>
 
