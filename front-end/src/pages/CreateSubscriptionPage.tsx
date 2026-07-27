@@ -121,27 +121,27 @@ export default function CreateSubscriptionPage() {
     }))
   }
 
-  // Posodobi polja obrazca glede na spremembo uporabniškega vnosa.
   function handle_change(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) {
-    const { name, value, type } = event.target
+  event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+) {
+  const target = event.target
+  const { name, value } = target
 
-    if (type === 'checkbox' && 'checked' in event.target) {
-      set_form((previous) => ({
-        ...previous,
-        [name]: event.target.checked,
-      }))
-      return
-    }
+  if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+    set_form((previous) => ({
+      ...previous,
+      [name]: target.checked,
+    }))
+    return
+  }
 
-    if (name === 'kanal_id' || name === 'pogostost') {
-      set_form((previous) => ({
-        ...previous,
-        [name]: Number(value),
-      }))
-      return
-    }
+  if (name === 'kanal_id' || name === 'pogostost') {
+    set_form((previous) => ({
+      ...previous,
+      [name]: Number(value),
+    }))
+    return
+  }
 
     set_form((previous) => ({
       ...previous,

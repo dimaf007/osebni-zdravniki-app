@@ -1,4 +1,4 @@
-// Glavna vstopna točka back-end aplikacije.
+﻿// Glavna vstopna točka back-end aplikacije.
 // Tukaj inicializiramo Express strežnik,
 // nastavimo osnovne middleware (vmesne programske opreme),
 // povežemo modularne API poti in na koncu vključimo centralizirano obdelavo napak.
@@ -8,6 +8,9 @@
 
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import { env } from './config/env.js';
 import pool from './config/db.js';
 import { errorMiddleware } from './middleware/error.middleware.js';
@@ -19,6 +22,16 @@ import doctorsRoutes from './modules/doctors/doctors.routes.js';
 import { runZzzsImportIfNeeded } from './modules/import/import.service.js';
 
 const app = express();
+
+// Ker uporabljamo ESM module, __dirname ni na voljo samodejno.
+// Zato ga izračunamo iz URL-ja trenutne datoteke.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// To je absolutna pot do zgrajenega React front-enda.
+// Build bomo po navodilih kopirali v mapo frontend-build
+// na ravni back-end projekta.
+const frontend_build_path = path.join(__dirname, '../frontend-build');
 
 // Inicializacija Express aplikacije.
 // Objekt app predstavlja glavni HTTP strežnik in točko, kjer povezujemo
@@ -33,11 +46,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use('/api/queries', searchQueriesRoutes);
+// Express naj streže statične datoteke React builda
+// (HTML, JS, CSS, slike in druge assete).
+app.use(express.static(frontend_build_path));
 
-app.get('/', async (_req: Request, res: Response) => {
-  res.send('Osebni Zdravniki backend is running');
-});
+app.use('/api/queries', searchQueriesRoutes);
 
 app.get('/api/health/db', async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -57,6 +70,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lookups', lookupsRoutes);
 app.use('/import', importRouter);
 app.use('/api/doctors', doctorsRoutes);
+
+// Za vse ne-API poti vrnemo React index.html,
+// da client-side routing deluje tudi ob refreshu strani.
+app.get(/^\/(?!api|import).*/, (_req: Request, res: Response) => {
+  res.sendFile(path.join(frontend_build_path, 'index.html'));
+});
 
 app.use(errorMiddleware);
 

@@ -31,12 +31,15 @@ export default function SingleSubscriptionPage() {
 
   // Ta effect ob odprtju strani naloži podatke naročnine in seznam krajev.
   useEffect(() => {
+    // Če uporabnik ni prijavljen, strani ne poskušamo nalagati.
     if (!is_authenticated || !user) {
       set_loading(false)
       return
     }
 
-    if (!subscription_id) {
+    // Če ID naročnine iz URL-ja ni veljaven, prikažemo napako
+    // in prekinemo nadaljnje nalaganje podatkov.
+    if (subscription_id === null) {
       set_subscription(null)
       set_cities([])
       set_error('Neveljaven ID naročnine.')
@@ -44,28 +47,39 @@ export default function SingleSubscriptionPage() {
       return
     }
 
+    // TypeScript-u eksplicitno povemo, da je od tu naprej ID zagotovo število.
+    // To vrednost shranimo v novo spremenljivko, da jo lahko varno uporabimo
+    // znotraj asinhrone funkcije spodaj.
+    const valid_subscription_id = subscription_id
+
     let cancelled = false
 
-    // Ta funkcija hkrati pridobi naročnino in šifrant krajev.
+    // Ta funkcija hkrati pridobi podrobnosti naročnine
+    // in šifrant krajev za lepši prikaz imen krajev.
     async function load_data() {
       try {
         set_loading(true)
         set_error(null)
 
         const [subscription_data, cities_data] = await Promise.all([
-          fetch_subscription_by_id(subscription_id),
+          // Uporabimo že preverjen ID, ki ni več null.
+          fetch_subscription_by_id(valid_subscription_id),
           fetch_cities(),
         ])
 
+        // State posodobimo samo, če komponenta še vedno obstaja.
         if (!cancelled) {
           set_subscription(subscription_data)
           set_cities(cities_data)
         }
       } catch (e) {
+        // Ob napaki prikažemo sporočilo uporabniku.
         if (!cancelled) {
           set_error((e as Error).message)
         }
       } finally {
+        // Na koncu vedno izklopimo loading,
+        // vendar le, če komponenta še ni bila odstranjena.
         if (!cancelled) {
           set_loading(false)
         }

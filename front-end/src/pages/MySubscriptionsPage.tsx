@@ -33,6 +33,10 @@ export default function MySubscriptionsPage() {
     // Ta funkcija hkrati naloži naročnine prijavljenega uporabnika
     // in šifrant krajev za bolj prijazen prikaz na karticah.
     async function load_data() {
+      if (!user) {
+        return
+      }
+
       try {
         set_loading(true)
         set_error(null)

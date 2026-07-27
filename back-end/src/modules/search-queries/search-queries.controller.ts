@@ -115,8 +115,9 @@ export async function createSearchQueryController(
 
     const kraji_ids = Array.isArray(req.body.kraji_ids)
       ? req.body.kraji_ids
-          .map(Number)
-          .filter((value) => !Number.isNaN(value) && value > 0)
+        .map(Number)
+        // Po pretvorbi vrednosti ohranimo le veljavna pozitivna števila.
+        .filter((value: number) => !Number.isNaN(value) && value > 0)
       : [];
 
     if (
@@ -197,7 +198,7 @@ export async function updateSearchQueryController(
     const kraji_ids = Array.isArray(req.body.kraji_ids)
       ? req.body.kraji_ids
           .map(Number)
-          .filter((value) => !Number.isNaN(value) && value > 0)
+          .filter((value: number) => !Number.isNaN(value) && value > 0)
       : [];
 
     if (

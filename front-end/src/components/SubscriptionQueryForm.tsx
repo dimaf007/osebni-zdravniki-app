@@ -144,11 +144,11 @@ export default function SubscriptionQueryForm({
   // Posodobi seznam krajev v nadrejenem obrazcu glede na to,
   // v katerem od treh polj je bil kraj izbran ali odstranjen.
   function update_kraj(index: number, city: CityLookup | null) {
-    const next_kraji_ids = [
-      value.kraji_ids[0] ?? null,
-      value.kraji_ids[1] ?? null,
-      value.kraji_ids[2] ?? null,
-    ]
+    const next_kraji_ids: (number | null)[] = [
+    value.kraji_ids[0] ?? null,
+    value.kraji_ids[1] ?? null,
+    value.kraji_ids[2] ?? null,
+  ];
 
     next_kraji_ids[index] = city ? city.kraj_id : null
 
