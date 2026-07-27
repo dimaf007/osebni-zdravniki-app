@@ -140,7 +140,7 @@ export default function SearchPage() {
 
     navigate('/login', {
       state: {
-        redirect_to: '/subscriptions/create',
+        redirect_to: '/create-subscription',
         subscription_prefill,
         source: 'search',
       },

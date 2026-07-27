@@ -1,26 +1,28 @@
 ﻿// Ta datoteka vsebuje funkcije za prijavo, registracijo
-// in brisanje uporabniškega računa.
+// in brisanje uporabniškega računa ter ponastavitev gesla.
 // Funkcije pošljejo zahteve na backend API
 // in vrnejo tipizirane odgovore.
 
-import { API_URL } from './api-config'
+import { API_URL } from "./api-config";
 import type {
   DeleteAccountResponse,
   LoginResponse,
   RegisterResponse,
-} from '../types/auth-types'
+  RequestPasswordResetResponse,
+  ResetPasswordResponse,
+} from "../types/auth-types";
 
 // Ta pomožna funkcija prebere odgovor strežnika kot besedilo
 // in ga nato varno pretvori v JSON.
 // Če backend vrne HTML ali drug nepravilen odgovor,
 // funkcija sproži jasno napako.
 async function parse_json_response<T>(response: Response): Promise<T> {
-  const text = await response.text()
+  const text = await response.text();
 
   try {
-    return JSON.parse(text) as T
+    return JSON.parse(text) as T;
   } catch {
-    throw new Error(`Server did not return JSON. Status: ${response.status}`)
+    throw new Error(`Server did not return JSON. Status: ${response.status}`);
   }
 }
 
@@ -32,28 +34,30 @@ export async function login_user(
   password: string,
 ): Promise<LoginResponse> {
   const response = await fetch(`${API_URL}/api/auth/login`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
       username,
       password,
     }),
-  })
+  });
 
-  const json = await parse_json_response<LoginResponse>(response)
+  const json = await parse_json_response<LoginResponse>(response);
 
   if (!response.ok) {
-    throw new Error(json.message || `Login failed with status ${response.status}`)
+    throw new Error(
+      json.message || `Login failed with status ${response.status}`,
+    );
   }
 
   if (!json.success) {
-    throw new Error(json.message || 'Login failed')
+    throw new Error(json.message || "Login failed");
   }
 
-  return json
+  return json;
 }
 
 // Ta funkcija pošlje podatke za registracijo na backend.
@@ -65,31 +69,32 @@ export async function register_user(
   password: string,
 ): Promise<RegisterResponse> {
   const response = await fetch(`${API_URL}/api/auth/register`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
       username,
       email,
       password,
     }),
-  })
+  });
 
-  const json = await parse_json_response<RegisterResponse>(response)
+  const json = await parse_json_response<RegisterResponse>(response);
 
   if (!response.ok) {
     throw new Error(
-      json.message || `Registration failed with status ${response.status}`,
-    )
+      json.message ||
+        `Registration failed with status ${response.status}`,
+    );
   }
 
   if (!json.success) {
-    throw new Error(json.message || 'Registration failed')
+    throw new Error(json.message || "Registration failed");
   }
 
-  return json
+  return json;
 }
 
 // Ta funkcija pošlje zahtevo za brisanje uporabniškega računa.
@@ -101,28 +106,93 @@ export async function delete_account(
   password: string,
 ): Promise<DeleteAccountResponse> {
   const response = await fetch(`${API_URL}/api/auth/delete-account`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
       username,
       password,
     }),
-  })
+  });
 
-  const json = await parse_json_response<DeleteAccountResponse>(response)
+  const json = await parse_json_response<DeleteAccountResponse>(response);
 
   if (!response.ok) {
     throw new Error(
-      json.message || `Delete account failed with status ${response.status}`,
-    )
+      json.message ||
+        `Delete account failed with status ${response.status}`,
+    );
   }
 
   if (!json.success) {
-    throw new Error(json.message || 'Delete account failed')
+    throw new Error(json.message || "Delete account failed");
   }
 
-  return json
+  return json;
+}
+
+// Zahteva za ponastavitev gesla na podlagi e-poštnega naslova.
+// V tej implementaciji strežnik vrne reset kodo v odzivu,
+// ker e-mail prehod ni konfiguriran.
+export async function request_password_reset(
+  email: string,
+): Promise<RequestPasswordResetResponse> {
+  const response = await fetch(`${API_URL}/api/auth/request-password-reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const json =
+    await parse_json_response<RequestPasswordResetResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(
+      json.message ||
+        `Request password reset failed with status ${response.status}`,
+    );
+  }
+
+  if (!json.success) {
+    throw new Error(json.message || "Request password reset failed");
+  }
+
+  return json;
+}
+
+// Dejanska ponastavitev gesla na podlagi reset kode in novega gesla.
+// Funkcija pošlje kodo in novo geslo na backend
+// ter ob napaki sproži jasno izjemo.
+export async function reset_password(
+  resetCode: string,
+  newPassword: string,
+): Promise<ResetPasswordResponse> {
+  const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ resetCode, newPassword }),
+  });
+
+  const json = await parse_json_response<ResetPasswordResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(
+      json.message ||
+        `Reset password failed with status ${response.status}`,
+    );
+  }
+
+  if (!json.success) {
+    throw new Error(json.message || "Reset password failed");
+  }
+
+  return json;
 }

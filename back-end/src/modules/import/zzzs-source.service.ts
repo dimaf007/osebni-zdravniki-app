@@ -63,6 +63,7 @@ export async function fetchLatestExcelLinks(): Promise<ExcelLinks> {
   const missing = (['SAZO', 'SAZO_DADM', 'GINZO', 'ZOBZO'] as const).filter(
     (key) => !links[key],
   );
+
   if (missing.length) {
     throw new Error(`Manjkajo povezave za: ${missing.join(', ')}`);
   }
@@ -83,4 +84,35 @@ export async function downloadExcel(url: string, prefix: string): Promise<string
   fs.writeFileSync(filePath, resp.data);
 
   return filePath;
+}
+
+// Iz mape data izbriše stare Excel datoteke in obdrži samo datoteke,
+// ki so bile uspešno prenesene v trenutnem uvozu.
+export function removeOldExcelFiles(keepFilePaths: string[]): void {
+  // Poskrbimo, da mapa obstaja tudi v primeru prvega zagona.
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  const keepFileNames = new Set(
+    keepFilePaths.map((filePath) => path.basename(filePath)),
+  );
+
+  for (const entry of fs.readdirSync(DATA_DIR, { withFileTypes: true })) {
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    const extension = path.extname(entry.name).toLowerCase();
+
+    // Brišemo samo Excel datoteke, ostalih datotek v mapi data se ne dotikamo.
+    if (extension !== '.xls' && extension !== '.xlsx') {
+      continue;
+    }
+
+    // Trenutno prenesene datoteke obdržimo.
+    if (keepFileNames.has(entry.name)) {
+      continue;
+    }
+
+    fs.unlinkSync(path.join(DATA_DIR, entry.name));
+  }
 }

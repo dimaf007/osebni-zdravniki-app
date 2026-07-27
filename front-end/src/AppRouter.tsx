@@ -14,6 +14,8 @@ import SingleSubscriptionPage from './pages/SingleSubscriptionPage'
 import EditSubscriptionPage from './pages/EditSubscriptionPage'
 import CreateSubscriptionPage from './pages/CreateSubscriptionPage'
 import DeleteAccountPage from './pages/DeleteAccountPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 export default function AppRouter() {
   return (
@@ -29,6 +31,8 @@ export default function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/delete-account" element={<DeleteAccountPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

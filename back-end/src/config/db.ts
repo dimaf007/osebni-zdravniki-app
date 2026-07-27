@@ -162,5 +162,102 @@ export const deleteUserAccountByUserId = async (
   }
 };
 
+// Ustvari zapis v tabeli password_reset za danega uporabnika.
+// Funkcija se uporablja ob zahtevi za ponastavitev gesla.
+export const createPasswordResetCode = async (
+  userId: number,
+  resetCode: string
+): Promise<ResultSetHeader> => {
+  const [result] = await pool.query<ResultSetHeader>(
+    `
+    INSERT INTO password_reset (
+      user_id,
+      reset_code,
+      created_at,
+      used_at
+    )
+    VALUES (?, ?, NOW(), NULL)
+    `,
+    [userId, resetCode]
+  )
+
+  return result
+}
+
+// Poišče uporabnika na podlagi še neuporabljenega reset koda.
+// Funkcija vrne vsaj osnovne podatke o uporabniku,
+// če reset koda obstaja in še ni bila uporabljena.
+export const findUserByResetCode = async (
+  resetCode: string
+): Promise<UporabnikRow[]> => {
+  const [rows] = await pool.query<UporabnikRow[]>(
+    `
+    SELECT
+      u.uporabnik_id,
+      u.uporabnisko_ime,
+      u.user_password,
+      u.datum_zadnje_posodobitve,
+      u.e_posta
+    FROM uporabnik u
+    INNER JOIN password_reset pr
+      ON pr.user_id = u.uporabnik_id
+    WHERE pr.reset_code = ?
+      AND pr.used_at IS NULL
+    `,
+    [resetCode]
+  )
+
+  return rows
+}
+
+// Posodobi geslo uporabnika in označi podani reset zapis kot uporabljen.
+// Funkcija se kliče ob uspešni ponastavitvi gesla.
+export const updateUserPasswordWithResetCode = async (
+  userId: number,
+  newPassword: string,
+  resetCode: string
+): Promise<boolean> => {
+  const connection = await pool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    // Najprej posodobimo geslo uporabnika.
+    const [updateUserResult] = await connection.query<ResultSetHeader>(
+      `
+      UPDATE uporabnik
+      SET user_password = ?, datum_zadnje_posodobitve = CURDATE()
+      WHERE uporabnik_id = ?
+      `,
+      [newPassword, userId]
+    )
+
+    // Nato označimo reset kodo kot uporabljeno.
+    const [updateResetResult] = await connection.query<ResultSetHeader>(
+      `
+      UPDATE password_reset
+      SET used_at = NOW()
+      WHERE user_id = ?
+        AND reset_code = ?
+        AND used_at IS NULL
+      `,
+      [userId, resetCode]
+    )
+
+    await connection.commit()
+
+    // Vrne true le, če smo posodobili tako uporabnika kot reset zapis.
+    return (
+      updateUserResult.affectedRows === 1 &&
+      updateResetResult.affectedRows === 1
+    )
+  } catch (error) {
+    await connection.rollback()
+    throw error
+  } finally {
+    connection.release()
+  }
+}
+
 // Privzeti export pool-a uporabljajo tudi drugi moduli aplikacije.
 export default pool;

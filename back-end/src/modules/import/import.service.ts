@@ -13,7 +13,11 @@
 
 import pool from '../../config/db.js';
 import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
-import { fetchLatestExcelLinks, downloadExcel } from './zzzs-source.service.js';
+import {
+  fetchLatestExcelLinks,
+  downloadExcel,
+  removeOldExcelFiles,
+} from './zzzs-source.service.js';
 import { parseAndNormalize } from './zzzs-parser.service.js';
 
 interface ImportStatusRow extends RowDataPacket {
@@ -350,7 +354,10 @@ export async function runZzzsImport(): Promise<void> {
       GINZO: await downloadExcel(links.GINZO, 'GINZO'),
       ZOBZO: await downloadExcel(links.ZOBZO, 'ZOBZO'),
     };
-
+    // Ko uspešno prenesemo celoten nov nabor Excel datotek,
+    // izbrišemo vse stare Excel datoteke in obdržimo samo trenutne.
+    removeOldExcelFiles(Object.values(files));
+    
     const { doctors, ambulances } = await parseAndNormalize(files);
 
     for (const row of doctors) {

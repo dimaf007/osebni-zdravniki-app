@@ -35,6 +35,18 @@ export default function CreateSubscriptionPage() {
   const location_state = location.state as CreateSubscriptionLocationState | null
   const subscription_prefill = location_state?.subscription_prefill
 
+  useEffect(() => {
+    if (!subscription_prefill) {
+      return
+    }
+
+    set_form((previous) => ({
+      ...previous,
+      kategorija_id: subscription_prefill.kategorija_id ?? 0,
+      kraji_ids: subscription_prefill.kraji_ids ?? [],
+    }))
+  }, [subscription_prefill])
+
   const [loading, set_loading] = useState(true)
   const [saving, set_saving] = useState(false)
   const [error, set_error] = useState<string | null>(null)

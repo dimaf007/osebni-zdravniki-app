@@ -1,6 +1,6 @@
 // Modul za avtentikacijo uporabnikov.
-// Datoteka definira API poti za registracijo, prijavo
-// in brisanje uporabniškega računa.
+// Datoteka definira API poti za registracijo, prijavo,
+// brisanje uporabniškega računa in ponastavitev gesla.
 // Tukaj izvajamo osnovno validacijo vhodnih podatkov,
 // preverjamo obstoj uporabnika v bazi
 // ter vračamo ustrezne HTTP odgovore glede na rezultat operacije.
@@ -11,6 +11,9 @@ import {
   deleteUserAccountByUserId,
   findUserByEmail,
   findUserByUsername,
+  createPasswordResetCode,
+  findUserByResetCode,
+  updateUserPasswordWithResetCode,
 } from "../../config/db.js";
 
 const router = Router();
@@ -230,9 +233,144 @@ const deleteAccountController = async (
   }
 };
 
+// Ta funkcija ustvari naključno 6-mestno številčno kodo.
+// Koda je primerna za demonstracijo ponastavitve gesla,
+// v realnem sistemu pa bi bila poslana po e-pošti ali SMS.
+function generateResetCode(): string {
+  const min = 100000; // najnižja 6-mestna številka
+  const max = 999999; // najvišja 6-mestna številka
+
+  const code = Math.floor(Math.random() * (max - min + 1)) + min;
+  return String(code);
+}
+
+// Kontroler za zahtevo ponastavitve gesla.
+// Uporabnik vnese svoj e-poštni naslov, sistem poišče uporabnika
+// in ustvari enkratno 6-mestno kodo v tabeli password_reset.
+// Ker e-mail prehod ni konfiguriran, se koda ne pošlje po e-pošti,
+// ampak se vrne v odzivu in jo front-end sam uporabi v demonstracijskem scenariju.
+const requestPasswordResetController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let { email } = req.body as { email?: string };
+
+    // Počistimo e-poštni naslov.
+    email = email?.trim().toLowerCase();
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required for password reset.",
+      });
+      return;
+    }
+
+    const users = await findUserByEmail(email);
+
+    // Zaradi varnosti ne razkrivamo, ali uporabnik obstaja ali ne.
+    // Če uporabnik ne obstaja, vseeno vrnemo uspešen odziv brez kode.
+    if (users.length === 0) {
+      res.status(200).json({
+        success: true,
+        message:
+          "If a user with this email exists, a reset code has been generated.",
+      });
+      return;
+    }
+
+    const user = users[0];
+
+    // Ustvarimo 6-mestno reset kodo in jo shranimo v tabelo password_reset.
+    const resetCode = generateResetCode();
+    await createPasswordResetCode(user.uporabnik_id, resetCode);
+
+    // V tej učni implementaciji e-mail prehod ni konfiguriran,
+    // zato kodo vrnemo neposredno v odzivu, da jo lahko front-end
+    // samodejno uporabi v demonstracijskem scenariju ponastavitve gesla.
+    res.status(200).json({
+      success: true,
+      message:
+        "Reset code has been generated. In a real system it would be sent via email.",
+      resetCode,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Kontroler za dejansko ponastavitev gesla.
+// Sprejme reset kodo in novo geslo, poišče uporabnika na podlagi kode,
+// nato pa posodobi geslo in označi reset zapis kot uporabljen.
+const resetPasswordController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let { resetCode, newPassword } = req.body as {
+      resetCode?: string;
+      newPassword?: string;
+    };
+
+    // Počistimo vhodne podatke.
+    resetCode = resetCode?.trim();
+    newPassword = newPassword?.trim();
+
+    if (!resetCode || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Reset code and new password are required.",
+      });
+      return;
+    }
+
+    // Poiščemo uporabnika na podlagi še neuporabljene reset kode.
+    const users = await findUserByResetCode(resetCode);
+
+    if (users.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "Reset code is invalid or has already been used.",
+      });
+      return;
+    }
+
+    const user = users[0];
+
+    // Posodobimo geslo in označimo reset zapis kot uporabljen.
+    const updated = await updateUserPasswordWithResetCode(
+      user.uporabnik_id,
+      newPassword,
+      resetCode
+    );
+
+    if (!updated) {
+      res.status(500).json({
+        success: false,
+        message: "Password was not reset.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Definicija API poti modula auth.
 router.post("/register", registerController);
 router.post("/login", loginController);
 router.delete("/delete-account", deleteAccountController);
+
+// Učne poti za ponastavitev gesla brez dejanskega e-mail prehoda.
+router.post("/request-password-reset", requestPasswordResetController);
+router.post("/reset-password", resetPasswordController);
 
 export default router;

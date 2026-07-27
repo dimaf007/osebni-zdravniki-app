@@ -1,4 +1,9 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿// Ta komponenta predstavlja skupni del obrazca za iskanje in naročnine.
+// Uporabniku omogoča izbiro kategorije zdravnika ter do treh krajev.
+// Glavno stanje obrazca ostaja v nadrejenem komponentu (controlled component),
+// ta komponenta pa lokalno hrani le pomožno UI-stanje za autocomplete polja.
+
+import { useEffect, useMemo, useState } from 'react'
 
 import { fetch_categories, fetch_cities } from '../api/lookups-api'
 import type { CategoryLookup, CityLookup } from '../types/lookups-types'
@@ -29,14 +34,12 @@ export default function SubscriptionQueryForm({
   const [city_query_2, set_city_query_2] = useState('')
   const [city_query_3, set_city_query_3] = useState('')
 
-  const [selected_city_1, set_selected_city_1] = useState<CityLookup | null>(null)
-  const [selected_city_2, set_selected_city_2] = useState<CityLookup | null>(null)
-  const [selected_city_3, set_selected_city_3] = useState<CityLookup | null>(null)
-
   const [open_1, set_open_1] = useState(false)
   const [open_2, set_open_2] = useState(false)
   const [open_3, set_open_3] = useState(false)
 
+  // Ob prvem prikazu komponente naložimo kategorije in kraje iz backend-a.
+  // Če kategorija še ni izbrana, samodejno nastavimo prvo razpoložljivo.
   useEffect(() => {
     let cancelled = false
 
@@ -81,41 +84,31 @@ export default function SubscriptionQueryForm({
     }
   }, [])
 
+  // Iz glavnega stanja value.kraji_ids izračunamo trenutno izbrane kraje
+  // za tri ločena autocomplete polja.
+  const selected_city_1 =
+    cities.find((city) => city.kraj_id === (value.kraji_ids[0] ?? 0)) ?? null
+  const selected_city_2 =
+    cities.find((city) => city.kraj_id === (value.kraji_ids[1] ?? 0)) ?? null
+  const selected_city_3 =
+    cities.find((city) => city.kraj_id === (value.kraji_ids[2] ?? 0)) ?? null
+
+  // Ko se prvi izbrani kraj spremeni od zunaj, posodobimo tudi prikazno besedilo v inputu.
   useEffect(() => {
-    const selected_cities = value.kraji_ids.map(
-      (kraj_id) => cities.find((city) => city.kraj_id === kraj_id) ?? null,
-    )
+    set_city_query_1(selected_city_1?.celoten_naziv ?? '')
+  }, [selected_city_1])
 
-    const city_1 = selected_cities[0] ?? null
-    const city_2 = selected_cities[1] ?? null
-    const city_3 = selected_cities[2] ?? null
-
-    set_selected_city_1(city_1)
-    set_selected_city_2(city_2)
-    set_selected_city_3(city_3)
-
-    set_city_query_1(city_1?.celoten_naziv ?? '')
-    set_city_query_2(city_2?.celoten_naziv ?? '')
-    set_city_query_3(city_3?.celoten_naziv ?? '')
-  }, [value.kraji_ids, cities])
-
+  // Ko se drugi izbrani kraj spremeni od zunaj, posodobimo tudi prikazno besedilo v inputu.
   useEffect(() => {
-    const kraji_ids = [selected_city_1, selected_city_2, selected_city_3]
-      .filter((city): city is CityLookup => city !== null)
-      .map((city) => city.kraj_id)
+    set_city_query_2(selected_city_2?.celoten_naziv ?? '')
+  }, [selected_city_2])
 
-    const is_same =
-      kraji_ids.length === value.kraji_ids.length &&
-      kraji_ids.every((id, index) => id === value.kraji_ids[index])
+  // Ko se tretji izbrani kraj spremeni od zunaj, posodobimo tudi prikazno besedilo v inputu.
+  useEffect(() => {
+    set_city_query_3(selected_city_3?.celoten_naziv ?? '')
+  }, [selected_city_3])
 
-    if (!is_same) {
-      on_change({
-        ...value,
-        kraji_ids,
-      })
-    }
-  }, [selected_city_1, selected_city_2, selected_city_3])
-
+  // Posodobi izbrano kategorijo v nadrejenem obrazcu.
   function handle_category_change(event: React.ChangeEvent<HTMLSelectElement>) {
     on_change({
       ...value,
@@ -123,10 +116,12 @@ export default function SubscriptionQueryForm({
     })
   }
 
+  // Normalizira besedilo za enostavnejše iskanje po krajih.
   function normalize(text: string): string {
     return text.trim().toLowerCase()
   }
 
+  // Preveri, ali kraj ustreza uporabniškemu iskalnemu nizu.
   function city_matches(city: CityLookup, query: string): boolean {
     const normalized_query = normalize(query)
 
@@ -137,6 +132,8 @@ export default function SubscriptionQueryForm({
     return normalize(city.celoten_naziv).includes(normalized_query)
   }
 
+  // Vrne filtrirane možnosti krajev za posamezno autocomplete polje.
+  // Hkrati izloči kraje, ki so že izbrani v drugih poljih.
   function filter_city_options(query: string, excluded_ids: number[]) {
     return cities
       .filter((city) => !excluded_ids.includes(city.kraj_id))
@@ -144,6 +141,24 @@ export default function SubscriptionQueryForm({
       .slice(0, 8)
   }
 
+  // Posodobi seznam krajev v nadrejenem obrazcu glede na to,
+  // v katerem od treh polj je bil kraj izbran ali odstranjen.
+  function update_kraj(index: number, city: CityLookup | null) {
+    const next_kraji_ids = [
+      value.kraji_ids[0] ?? null,
+      value.kraji_ids[1] ?? null,
+      value.kraji_ids[2] ?? null,
+    ]
+
+    next_kraji_ids[index] = city ? city.kraj_id : null
+
+    on_change({
+      ...value,
+      kraji_ids: next_kraji_ids.filter((id): id is number => id !== null),
+    })
+  }
+
+  // Možnosti za prvo polje kraja.
   const options_1 = useMemo(
     () =>
       filter_city_options(city_query_1, [
@@ -153,6 +168,7 @@ export default function SubscriptionQueryForm({
     [cities, city_query_1, selected_city_2, selected_city_3],
   )
 
+  // Možnosti za drugo polje kraja.
   const options_2 = useMemo(
     () =>
       filter_city_options(city_query_2, [
@@ -162,6 +178,7 @@ export default function SubscriptionQueryForm({
     [cities, city_query_2, selected_city_1, selected_city_3],
   )
 
+  // Možnosti za tretje polje kraja.
   const options_3 = useMemo(
     () =>
       filter_city_options(city_query_3, [
@@ -171,48 +188,54 @@ export default function SubscriptionQueryForm({
     [cities, city_query_3, selected_city_1, selected_city_2],
   )
 
+  // Izbere kraj v prvem polju.
   function select_city_1(city: CityLookup) {
-    set_selected_city_1(city)
-    set_city_query_1(city.celoten_naziv)
+    update_kraj(0, city)
     set_open_1(false)
   }
 
+  // Izbere kraj v drugem polju.
   function select_city_2(city: CityLookup) {
-    set_selected_city_2(city)
-    set_city_query_2(city.celoten_naziv)
+    update_kraj(1, city)
     set_open_2(false)
   }
 
+  // Izbere kraj v tretjem polju.
   function select_city_3(city: CityLookup) {
-    set_selected_city_3(city)
-    set_city_query_3(city.celoten_naziv)
+    update_kraj(2, city)
     set_open_3(false)
   }
 
+  // Ob spremembi vnosa v prvem polju odpremo seznam možnosti.
+  // Če uporabnik spremeni besedilo ročno, odstranimo trenutno izbiro.
   function handle_city_query_1_change(next_value: string) {
     set_city_query_1(next_value)
     set_open_1(true)
 
     if (selected_city_1 && next_value !== selected_city_1.celoten_naziv) {
-      set_selected_city_1(null)
+      update_kraj(0, null)
     }
   }
 
+  // Ob spremembi vnosa v drugem polju odpremo seznam možnosti.
+  // Če uporabnik spremeni besedilo ročno, odstranimo trenutno izbiro.
   function handle_city_query_2_change(next_value: string) {
     set_city_query_2(next_value)
     set_open_2(true)
 
     if (selected_city_2 && next_value !== selected_city_2.celoten_naziv) {
-      set_selected_city_2(null)
+      update_kraj(1, null)
     }
   }
 
+  // Ob spremembi vnosa v tretjem polju odpremo seznam možnosti.
+  // Če uporabnik spremeni besedilo ročno, odstranimo trenutno izbiro.
   function handle_city_query_3_change(next_value: string) {
     set_city_query_3(next_value)
     set_open_3(true)
 
     if (selected_city_3 && next_value !== selected_city_3.celoten_naziv) {
-      set_selected_city_3(null)
+      update_kraj(2, null)
     }
   }
 
