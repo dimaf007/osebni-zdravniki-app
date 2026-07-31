@@ -10,13 +10,21 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
 body {
   margin: 0;
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f4f6f8;
-  color: #213547;
+  background-color: #f5f7fb;
+  color: #223a5e;
+  font-family: Arial, sans-serif;
 }
 
 main {
@@ -34,6 +42,43 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* ===== Layout (App Shell & Header) ===== */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 24px 16px 8px;
+  text-align: center;
+  color: #1a2b4c;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 32px;
+  color: #45679a;
+  text-align: left;
+}
+
+.app-content {
+  flex: 1;
+}
+
+.app-footer {
+  margin-top: 32px;
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #5b6b84;
+  border-top: 1px solid #d8dee8;
+  background-color: #ffffff;
+}
+
+/* ===== Navigation & Main Menu ===== */
 
 nav {
   display: flex;
@@ -62,18 +107,65 @@ nav .secondary-button {
   width: auto;
 }
 
+.main-menu {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 32px;
+  flex-wrap: wrap;
+}
+
+.menu-link,
+.menu-link:visited {
+  color: #223a5e;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button.menu-link {
+  all: unset;
+  color: #223a5e;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.menu-link:hover,
+.menu-link:focus-visible {
+  color: #2f5bea;
+}
+
+.menu-link:focus-visible {
+  outline: 2px solid #2f5bea;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ===== UI Components (Messages, Cards, Forms) ===== */
+
 .status-message {
   padding: 16px 18px;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   color: #374151;
+  margin: 12px 0 18px;
+  line-height: 1.6;
 }
 
 .error-message {
-  border-color: #f5c2c7;
-  background-color: #fff1f2;
-  color: #b42318;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px 14px;
 }
 
 .login-page {
@@ -93,9 +185,14 @@ nav .secondary-button {
 
 .subscriptions-page {
   width: 100%;
-  max-width: 900px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 32px 20px 56px;
+}
+
+.subscriptions-page h1,
+.subscriptions-page h2 {
+  color: #1f2937;
 }
 
 .subscriptions-page h1 {
@@ -104,21 +201,43 @@ nav .secondary-button {
   font-size: 2rem;
 }
 
+.subscriptions-page h2 {
+  margin-top: 28px;
+  margin-bottom: 16px;
+  font-size: 1.9rem;
+}
+
 .subscriptions-list {
   display: grid;
   gap: 16px;
+  margin-top: 28px;
+}
+
+.subscriptions-list>.subscription-card {
+  padding: 24px;
+}
+
+.subscriptions-list section {
+  margin-top: 16px;
+}
+
+.subscriptions-list .subscription-row+.subscription-row {
+  margin-top: 6px;
 }
 
 .subscription-card {
-  background-color: #ffffff;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
 .subscription-title {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  font-size: 1.35rem;
+  color: #111827;
 }
 
 .subscription-title strong {
@@ -128,21 +247,26 @@ nav .secondary-button {
 }
 
 .subscription-row {
-  margin: 0 0 8px 0;
-  color: #4b5563;
+  margin: 8px 0;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.subscription-row strong {
+  color: #111827;
 }
 
 .subscription-row:last-child {
   margin-bottom: 0;
 }
 
-/* Obrazec naj bo navpično razporejen. */
+/* ===== Forms & Inputs ===== */
+
 form {
   display: grid;
   gap: 16px;
 }
 
-/* Vsako polje naj bo urejeno eno pod drugim. */
 form>div {
   display: flex;
   flex-direction: column;
@@ -162,99 +286,6 @@ input {
   font: inherit;
   color: inherit;
   background-color: #ffffff;
-}
-
-/* Gumba naj bosta pod polji in enake širine. */
-.auth-actions {
-  display: grid;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-/* Oba gumba imata enak videz in velikost. */
-.secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 10px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background-color: #ffffff;
-  color: #374151;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* Hover stanje za oba gumba. */
-.secondary-button:hover {
-  background-color: #f9fafb;
-  text-decoration: none;
-}
-
-.secondary-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* ===== Search page ===== */
-
-.subscriptions-page {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 32px 20px 56px;
-}
-
-.subscriptions-page h1,
-.subscriptions-page h2 {
-  color: #1f2937;
-}
-
-.subscriptions-page h2 {
-  margin-top: 28px;
-  margin-bottom: 16px;
-  font-size: 1.9rem;
-}
-
-.status-message {
-  margin: 12px 0 18px;
-  color: #4b5563;
-  line-height: 1.6;
-}
-
-.error-message {
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-
-.subscription-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 22px 24px;
-  margin-bottom: 18px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-}
-
-.subscription-title {
-  margin-bottom: 14px;
-  font-size: 1.35rem;
-  color: #111827;
-}
-
-.subscription-row {
-  margin: 8px 0;
-  color: #374151;
-  line-height: 1.6;
-}
-
-.subscription-row strong {
-  color: #111827;
 }
 
 .auth-actions {
@@ -287,7 +318,33 @@ input {
   transform: none;
 }
 
-/* ===== Search form ===== */
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background-color: #f9fafb;
+  text-decoration: none;
+}
+
+.secondary-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ===== Search page ===== */
 
 .city-autocomplete {
   position: relative;
@@ -349,23 +406,6 @@ input {
 
 /* ===== Search results ===== */
 
-.subscriptions-list {
-  margin-top: 28px;
-}
-
-.subscriptions-list>.subscription-card {
-  padding: 24px;
-}
-
-.subscriptions-list section {
-  margin-top: 16px;
-}
-
-.subscriptions-list .subscription-row+.subscription-row {
-  margin-top: 6px;
-}
-
-/* Inner result items: doctor / ambulance */
 .search-result-item {
   background: #f8fafc;
   border: 1px solid #e5e7eb;
