@@ -19,7 +19,9 @@ import lookupsRoutes from './modules/lookups/lookups.routes.js';
 import searchQueriesRoutes from './modules/search-queries/search-queries.routes.js';
 import importRouter from './modules/import/import.routes.js';
 import doctorsRoutes from './modules/doctors/doctors.routes.js';
+import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes.js';
 import { runZzzsImportIfNeeded } from './modules/import/import.service.js';
+
 
 const app = express();
 
@@ -70,6 +72,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lookups', lookupsRoutes);
 app.use('/import', importRouter);
 app.use('/api/doctors', doctorsRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
 
 // Za vse ne-API poti vrnemo React index.html,
 // da client-side routing deluje tudi ob refreshu strani.

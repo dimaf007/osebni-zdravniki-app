@@ -122,26 +122,26 @@ export default function CreateSubscriptionPage() {
   }
 
   function handle_change(
-  event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-) {
-  const target = event.target
-  const { name, value } = target
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
+    const target = event.target
+    const { name, value } = target
 
-  if (target instanceof HTMLInputElement && target.type === 'checkbox') {
-    set_form((previous) => ({
-      ...previous,
-      [name]: target.checked,
-    }))
-    return
-  }
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      set_form((previous) => ({
+        ...previous,
+        [name]: target.checked,
+      }))
+      return
+    }
 
-  if (name === 'kanal_id' || name === 'pogostost') {
-    set_form((previous) => ({
-      ...previous,
-      [name]: Number(value),
-    }))
-    return
-  }
+    if (name === 'kanal_id' || name === 'pogostost') {
+      set_form((previous) => ({
+        ...previous,
+        [name]: Number(value),
+      }))
+      return
+    }
 
     set_form((previous) => ({
       ...previous,
@@ -158,8 +158,35 @@ export default function CreateSubscriptionPage() {
       return
     }
 
+    if (!form.kategorija_id || Number.isNaN(form.kategorija_id)) {
+      set_error('Izberi kategorijo.')
+      return
+    }
+
     if (form.kraji_ids.length === 0) {
       set_error('Izberi vsaj en kraj.')
+      return
+    }
+
+    if (!form.kanal_id || Number.isNaN(form.kanal_id)) {
+      set_error('Izberi kanal.')
+      return
+    }
+
+    if (!form.zunanji_id_kanala.trim()) {
+      set_error(
+        'Vnesi zunanji ID kanala (email, Telegram nickname (@...) ali WhatsApp).',
+      )
+      return
+    }
+
+    if (!form.pogostost || Number.isNaN(form.pogostost) || form.pogostost < 1) {
+      set_error('Pogostost mora biti vsaj 1.')
+      return
+    }
+
+    if (!form.ura_posiljanja.trim()) {
+      set_error('Izberi čas pošiljanja.')
       return
     }
 
@@ -171,7 +198,7 @@ export default function CreateSubscriptionPage() {
         uporabnik_id: user.id,
         kategorija_id: form.kategorija_id,
         kanal_id: form.kanal_id,
-        zunanji_id_kanala: form.zunanji_id_kanala,
+        zunanji_id_kanala: form.zunanji_id_kanala.trim(),
         pogostost: form.pogostost,
         ura_posiljanja: form.ura_posiljanja,
         aktivna: form.aktivna,
@@ -284,7 +311,9 @@ export default function CreateSubscriptionPage() {
 
         <div className="subscription-row">
           <label htmlFor="zunanji_id_kanala">
-            <strong>Zunanji ID kanala:</strong>
+            <strong>
+              Zunanji ID kanala (email, Telegram nickname (@...) ali WhatsApp):
+            </strong>
           </label>
 
           <input

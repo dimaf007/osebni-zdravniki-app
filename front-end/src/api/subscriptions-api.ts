@@ -6,12 +6,12 @@ import type {
   GetSubscriptionResponse,
   GetSubscriptionsResponse,
   Subscription,
-} from '../types/subscription-types';
+} from '../types/subscription-types'
 
 // Osnovni URL backend strežnika preberemo iz .env datoteke.
 // Če Vite ne prebere .env pravilno, uporabimo rezervni naslov backend-a.
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://88.200.63.148:30033';
+  import.meta.env.VITE_API_BASE_URL || 'http://88.200.63.148:30033'
 
 // Ta vmesnik opisuje podatke, ki jih pošljemo backendu pri posodobitvi naročnine.
 export interface UpdateSubscriptionPayload {
@@ -110,14 +110,13 @@ export async function update_subscription(
     body: JSON.stringify(payload),
   })
 
-  if (!response.ok) {
-    throw new Error(`Failed to update subscription: ${response.status}`)
-  }
+  const json: GetSubscriptionResponse & { message?: string } =
+    await response.json()
 
-  const json: GetSubscriptionResponse = await response.json()
-
-  if (!json.success) {
-    throw new Error('Backend returned error for subscription update')
+  if (!response.ok || !json.success) {
+    throw new Error(
+      json.message || `Failed to update subscription: ${response.status}`,
+    )
   }
 
   return json.data
@@ -136,14 +135,12 @@ export async function create_subscription(
     body: JSON.stringify(payload),
   })
 
-  if (!response.ok) {
-    throw new Error(`Failed to create subscription: ${response.status}`)
-  }
-
   const json: CreateSubscriptionResponse = await response.json()
 
-  if (!json.success) {
-    throw new Error('Backend returned error for create subscription')
+  if (!response.ok || !json.success) {
+    throw new Error(
+      json.message || `Failed to create subscription: ${response.status}`,
+    )
   }
 
   const created_id = Number(json.data?.poizvedba_id)
@@ -157,9 +154,14 @@ export async function create_subscription(
 
 // Ta funkcija dokončno izbriše naročnino po njenem ID-ju.
 // Če backend vrne napako, jo pretvorimo v razumljivo sporočilo.
-export async function delete_subscription(subscription_id: number): Promise<void> {
-  const response = await fetch(`${API_URL}/api/subscriptions/${subscription_id}`, {
+export async function delete_subscription(
+  subscription_id: number,
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/queries/${subscription_id}`, {
     method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+    },
   })
 
   const payload = await response.json()
