@@ -77,7 +77,7 @@ export default function MySubscriptionsPage() {
 
   if (!is_authenticated || !user) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Moje naročnine</h1>
         <p>Za ogled naročnin se moraš prijaviti.</p>
       </main>
@@ -86,7 +86,7 @@ export default function MySubscriptionsPage() {
 
   if (loading) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Moje naročnine</h1>
         <p>Nalaganje naročnin...</p>
       </main>

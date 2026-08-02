@@ -38,7 +38,7 @@ export default function DeleteAccountPage() {
   }
 
   return (
-    <main className="login-page">
+    <section className="login-page">
       <section className="login-card">
         <h1>Izbriši račun</h1>
 
@@ -69,6 +69,6 @@ export default function DeleteAccountPage() {
 
         {message && <p>{message}</p>}
       </section>
-    </main>
+    </section>
   )
 }
