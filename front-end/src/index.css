@@ -29,9 +29,8 @@ body {
 
 main {
   width: 100%;
-  max-width: 900px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 0;
 }
 
 a {
@@ -258,6 +257,82 @@ button.menu-link {
 
 .subscription-row:last-child {
   margin-bottom: 0;
+}
+
+.subscription-row--status-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.subscription-status-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 120px;
+}
+
+.subscription-status-field label {
+  margin-bottom: 10px;
+}
+
+.subscription-status-field input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
+
+.subscription-danger-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.subscription-danger-text {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.danger-button {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #dc2626;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.danger-button:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.danger-button:disabled {
+  background-color: #fca5a5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 640px) {
+  .subscription-row--status-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .subscription-danger-zone {
+    max-width: none;
+  }
+
+  .danger-button {
+    width: 100%;
+  }
 }
 
 /* ===== Forms & Inputs ===== */
@@ -489,5 +564,83 @@ input {
   .search-summary {
     flex-direction: column;
     gap: 8px;
+  }
+}
+
+/* ===== About page ===== */
+
+.about-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px 56px;
+}
+
+.about-card {
+  width: 100%;
+  max-width: 820px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.about-card h1 {
+  margin: 0 0 16px;
+  color: #1f2937;
+  font-size: 2rem;
+}
+
+.about-lead {
+  margin: 0 0 24px;
+  color: #374151;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.about-section+.about-section {
+  margin-top: 24px;
+}
+
+.about-section h2 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 1.25rem;
+}
+
+.about-section p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.about-section p+p {
+  margin-top: 12px;
+}
+
+.about-actions {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .about-page {
+    padding: 24px 14px 40px;
+  }
+
+  .about-card {
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+
+  .about-card h1 {
+    font-size: 1.7rem;
+  }
+
+  .about-section h2 {
+    font-size: 1.12rem;
   }
 }

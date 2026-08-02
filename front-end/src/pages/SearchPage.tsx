@@ -1,4 +1,9 @@
-﻿import { useState } from 'react'
+﻿// Ta datoteka predstavlja stran za iskanje zdravnikov.
+// Uporabnik lahko izbere kategorijo in kraje ter pošlje iskalno poizvedbo.
+// Po uspešnem iskanju stran prikaže rezultate po krajih in kategorijah.
+// Če uporabnik želi, lahko iz istega iskanja nadaljuje na ustvarjanje naročnine.
+
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import SubscriptionQueryForm, {
@@ -56,38 +61,41 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const { user, is_authenticated } = use_auth()
 
+  // V tem state-u hranimo trenutno stanje iskalnega obrazca.
   const [form, set_form] = useState<SearchQueryFormState>({
     kategorija_id: 0,
     kraji_ids: [],
   })
 
+  // Ti state-i skrbijo za nalaganje, napake in rezultate iskanja.
   const [loading, set_loading] = useState(false)
   const [error, set_error] = useState<string | null>(null)
   const [results, set_results] = useState<SearchResponseData | null>(null)
   const [has_searched, set_has_searched] = useState(false)
 
+  // Pošlje iskalno poizvedbo na backend in vrne strukturirane rezultate.
   async function run_search(query: SearchQueryFormState): Promise<SearchResponseData> {
-
     const response = await fetch(`${API_URL}/api/doctors/search`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      kraji_ids: query.kraji_ids,
-      kategorije_ids: [query.kategorija_id],
-    }),
-  })
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        kraji_ids: query.kraji_ids,
+        kategorije_ids: [query.kategorija_id],
+      }),
+    })
 
-  const payload = await response.json()
+    const payload = await response.json()
 
-  if (!response.ok || !payload.success) {
-    throw new Error(payload.message || 'Search request failed')
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.message || 'Search request failed')
+    }
+
+    return payload.data
   }
 
-  return payload.data
-  }
-
+  // Preveri obrazec, izvede iskanje in shrani rezultat za prikaz na strani.
   async function handle_submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -122,6 +130,8 @@ export default function SearchPage() {
     }
   }
 
+  // Ustvari začetne podatke za naročnino iz trenutnega iskanja
+  // in uporabnika preusmeri na pravo naslednjo stran.
   function handle_create_subscription() {
     const subscription_prefill = {
       kategorija_id: form.kategorija_id,
@@ -147,6 +157,7 @@ export default function SearchPage() {
     })
   }
 
+  // Prešteje skupno število najdenih zdravnikov v vseh krajih in kategorijah.
   function count_total_doctors(data: SearchResponseData): number {
     return data.cities.reduce((city_total, city) => {
       const doctors_in_city = city.categories.reduce((category_total, category) => {
@@ -157,6 +168,8 @@ export default function SearchPage() {
     }, 0)
   }
 
+  // Preveri, ali je v posameznem kraju vsaj en zdravnik,
+  // ki trenutno sprejema nove paciente.
   function has_any_accepting_doctors(city: SearchCityGroup): boolean {
     return city.categories.some((category) =>
       category.doctors.some((doctor) => doctor.sprejema)
@@ -207,8 +220,8 @@ export default function SearchPage() {
             </div>
 
             <p className="status-message">
-                Zadnja posodobitev podatkov:{' '}
-                {results.updated_at ? results.updated_at : 'ni podatka'}
+              Zadnja posodobitev podatkov:{' '}
+              {results.updated_at ? results.updated_at : 'ni podatka'}
             </p>
 
             {results.cities.map((city) => (

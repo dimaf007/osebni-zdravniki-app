@@ -101,7 +101,7 @@ export default function LoginPage() {
           <Link to="/forgot-password">Pozabljeno geslo?</Link>
         </p>
 
-        <p>
+        <p> Še nimaš računa?{' '}
           <Link
             to="/register"
             state={{

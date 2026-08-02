@@ -154,3 +154,17 @@ export async function create_subscription(
 
   return created_id
 }
+
+// Ta funkcija dokončno izbriše naročnino po njenem ID-ju.
+// Če backend vrne napako, jo pretvorimo v razumljivo sporočilo.
+export async function delete_subscription(subscription_id: number): Promise<void> {
+  const response = await fetch(`${API_URL}/api/subscriptions/${subscription_id}`, {
+    method: 'DELETE',
+  })
+
+  const payload = await response.json()
+
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.message || 'Subscription delete failed')
+  }
+}

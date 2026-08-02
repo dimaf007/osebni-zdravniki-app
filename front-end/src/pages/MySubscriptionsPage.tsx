@@ -104,7 +104,7 @@ export default function MySubscriptionsPage() {
 
   if (subscriptions.length === 0) {
     return (
-      <main>
+      <main className="subscriptions-page">
         <h1>Moje naročnine</h1>
         <p>Še nimaš nobene naročnine.</p>
       </main>
@@ -112,11 +112,12 @@ export default function MySubscriptionsPage() {
   }
 
   return (
-    <main>
-      <h1>Moje naročnine</h1>
+  <main className="subscriptions-page">
+    <h1>Moje naročnine</h1>
 
-      {/* Vsako naročnino prikažemo kot ločeno kartico.
-      Kartici posredujemo tudi slovar imen krajev. */}
+    {/* Vsako naročnino prikažemo kot ločeno kartico.
+    Kartici posredujemo tudi slovar imen krajev. */}
+    <div className="subscriptions-list">
       {subscriptions.map((subscription) => (
         <SubscriptionCard
           key={subscription.poizvedba_id}
@@ -124,6 +125,7 @@ export default function MySubscriptionsPage() {
           placeNamesById={placeNamesById}
         />
       ))}
-    </main>
-  )
+    </div>
+  </main>
+)
 }
